@@ -1,0 +1,3771 @@
+---
+title: "Data Analysis v1"
+html_document: default
+  pdf_document: default
+---
+
+
+
+Step 1 -- Loading packages and libraries
+
+
+
+```{r}
+library(tidyverse)
+library(readr)
+library(conflicted) #loads conflicted package to provide conflicted resolution strategy to tidyverse package
+library(dplyr)
+library(tibble) #For tibble formatting
+library(lubridate) #For date formatting
+library(clock)
+library(stringr)
+library(tidyr)
+library(datasets)
+library(DT)
+library(ggplot2)
+
+```
+
+
+
+
+
+Step 2 - Importing datasets, assing variables to each dataset and convert them to tibbles for easier read.
+
+
+
+```{r}
+
+#Import PRC Dataset and assign to variable
+
+
+PRC2024 <- read.csv("PRC2024.csv")
+
+```
+
+
+
+
+
+
+Step 3 - Summary of PRC2024 dataset
+
+```{r}
+summary(PRC2024)
+str(PRC2024)
+```
+
+
+
+```{r}
+view(PRC2024)
+```
+
+
+Step 4: Rename variables
+
+
+```{r}
+# Assuming 'my_data' is your data frame
+# And you want to rename 'old_name1' to 'new_name1' and 'old_name2' to 'new_name2'
+
+
+
+# Rename columns
+colnames(PRC2024) <- c("Index", "Name.of.Entity", "Likely.Duplicate.Breach", "Source", "Reported.Date.Month","Reported.Date.Day","Reported.Date.Year","Date.of.Breach.Month", "Date.of.Breach.Day", "Date.of.Breach.Year", "Organization.Type", "Organization.Type.Explanation", "Breach.Type","Breach.Impute" ,"Breach.Type.Explanation", "Max.Records.Impacted", "Max.Records.Impacted.Explanation", "Description", "Information.Types","Encryption.Status","Information.Types.Description", "breach.location.street", "breach.location.city", "State", "breach.location.ZIP","breach.location.country","breach.location.explanation", "Records.Impacted.From.Source", "State.Records.Impacted.from.Source", "Notification.URL", "PDF", "DBAUUID", "Date.of.Breach.End.Month","Date.of.Breach.End.Day","Date.of.Breach.End.Year","Total.Records.Impacted.From.Letter", "State.Records.Impacted.from.Letter", "Description.of.Breach" )
+
+# View the data frame with the new column names
+
+```
+
+
+
+
+
+Step 5: Code to transform the variables in the PRC2024 dataset from factors to their corresponding variable types.
+
+```{r}
+
+PRC2024$Index <- as.numeric(PRC2024$Index)
+PRC2024$Name.of.Entity <- as.character(PRC2024$Name.of.Entity)
+PRC2024$Likely.Duplicate.Breach <- as.character(PRC2024$Likely.Duplicate.Breach)
+PRC2024$Source <- as.character(PRC2024$Source)
+PRC2024$Reported.Date.Month <- as.numeric(PRC2024$Reported.Date.Month)
+PRC2024$Reported.Date.Day <- as.numeric(PRC2024$Reported.Date.Day)
+PRC2024$Reported.Date.Year <- as.numeric(PRC2024$Reported.Date.Year)
+PRC2024$Date.of.Breach.Month <- as.numeric(PRC2024$Date.of.Breach.End.Month)
+PRC2024$Date.of.Breach.Day <- as.numeric(PRC2024$Date.of.Breach.End.Day)
+PRC2024$Date.of.Breach.Year <- as.numeric(PRC2024$Date.of.Breach.End.Year)
+PRC2024$Organization.Type <- as.character(PRC2024$Organization.Type)
+PRC2024$Organization.Type.Explanation <- as.character(PRC2024$Organization.Type.Explanation)
+PRC2024$Breach.Type <- as.character(PRC2024$Breach.Type)
+PRC2024$Breach.Impute <- as.character(PRC2024$Breach.Impute)
+PRC2024$Breach.Type.Explanation <- as.character(PRC2024$Breach.Type.Explanation)
+PRC2024$Max.Records.Impacted <- as.numeric(PRC2024$Max.Records.Impacted) 
+PRC2024$Max.Records.Impacted.Explanation <- as.character(PRC2024$Max.Records.Impacted.Explanation)
+PRC2024$Information.Types <- as.character(PRC2024$Information.Types)
+PRC2024$Encryption.Status <- as.character(PRC2024$Encryption.Status)
+PRC2024$Information.Types.Description <- as.character(PRC2024$Information.Types.Description)
+PRC2024$Description <- as.character(PRC2024$Description)
+PRC2024$breach.location.street <- as.character(PRC2024$breach.location.street)
+PRC2024$breach.location.city <- as.character(PRC2024$breach.location.city)
+PRC2024$State <- as.character(PRC2024$State)
+PRC2024$breach.location.ZIP <- as.numeric(PRC2024$breach.location.ZIP)
+PRC2024$breach.location.country <- as.character(PRC2024$breach.location.country)
+PRC2024$breach.location.explanation <- as.character(PRC2024$breach.location.explanation)
+PRC2024$Records.Impacted.From.Source <- as.character(PRC2024$Records.Impacted.From.Source)
+PRC2024$State.Records.Impacted.from.Source <- as.numeric(PRC2024$State.Records.Impacted.from.Source)
+PRC2024$Notification.URL <- as.numeric(PRC2024$Notification.URL)
+PRC2024$PDF <- as.character(PRC2024$PDF)
+PRC2024$DBAUUID <- as.character(PRC2024$DBAUUID)
+PRC2024$Date.of.Breach.End.Month <- as.numeric(PRC2024$Date.of.Breach.End.Month)
+PRC2024$Date.of.Breach.End.Day <- as.numeric(PRC2024$Date.of.Breach.End.Day)
+PRC2024$Date.of.Breach.End.Year <- as.numeric(PRC2024$Date.of.Breach.End.Year)
+PRC2024$Total.Records.Impacted.From.Letter<- as.numeric(PRC2024$Total.Records.Impacted.From.Letter)
+PRC2024$State.Records.Impacted.from.Letter<- as.numeric(PRC2024$State.Records.Impacted.from.Letter)
+PRC2024$Description.of.Breach <- as.character(PRC2024$Description.of.Breach)
+
+
+```
+
+
+
+
+Step 6: Merge Reported dates into one column and format correctly
+
+
+```{r}
+# Combine the month, day, and year columns into a single date string
+PRC2024$Reported.Date.String <- with(PRC2024, paste(Reported.Date.Month, Reported.Date.Day, Reported.Date.Year, sep = "/"))
+
+# Convert the date string into a Date object
+PRC2024$Reported.Date.New <- as.Date(PRC2024$Reported.Date.String, format = "%m/%d/%Y")
+
+# The 'date' column will now have the combined dates in yyyy/mm/dd format
+
+```
+
+
+
+Step 7: Merge Date of Breach into one column and format correctly
+
+
+```{r}
+# Combine the month, day, and year columns into a single date string
+PRC2024$Date.of.Breach.String <- with(PRC2024, paste(Date.of.Breach.Month, Date.of.Breach.Day, Date.of.Breach.Year, sep = "/"))
+
+# Convert the date string into a Date object
+PRC2024$Date.of.Breach.New <- as.Date(PRC2024$Date.of.Breach.String, format = "%m/%d/%Y")
+
+# The 'date' column will now have the combined dates in yyyy/mm/dd format
+```
+
+
+
+Step 8: Merge Date of Breach End into one column and format correctly
+
+```{r}
+# Combine the month, day, and year columns into a single date string
+PRC2024$Date.of.Breach.End.String <- with(PRC2024, paste(Date.of.Breach.End.Month, Date.of.Breach.End.Day, Date.of.Breach.End.Year, sep = "/"))
+
+# Convert the date string into a Date object
+PRC2024$Date.of.Breach.End.New <- as.Date(PRC2024$Date.of.Breach.End.String, format = "%m/%d/%Y")
+
+# The 'date' column will now have the combined dates in yyyy/mm/dd format
+```
+
+
+Checking for missing values count
+
+```{r}
+# Check for NAs in the entire dataset
+nas_in_dataset <- colSums(is.na(PRC2024))
+
+# Print the result
+print(nas_in_dataset)
+```
+
+
+
+
+
+
+
+
+
+Step 9: Remove not needed variables: 
+
+
+```{r}
+PRC2024$Likely.Duplicate.Breach <- NULL #Will remove Likely duplicate column
+PRC2024$Reported.Date.Month <- NULL #
+PRC2024$Reported.Date.Day <- NULL
+PRC2024$Reported.Date.Year <- NULL
+PRC2024$Date.of.Breach.Month <- NULL
+PRC2024$Date.of.Breach.Day <- NULL
+PRC2024$Date.of.Breach.Year <- NULL
+PRC2024$Description <- NULL
+PRC2024$breach.location.street <- NULL
+PRC2024$breach.location.city <- NULL
+PRC2024$breach.location.ZIP <- NULL
+PRC2024$breach.location.country <- NULL
+PRC2024$Records.Impacted.From.Source <- NULL
+PRC2024$State.Records.Impacted.from.Source <- NULL
+PRC2024$PDF <- NULL
+PRC2024$Notification.URL <- NULL
+PRC2024$DBAUUID <- NULL
+PRC2024$Date.of.Breach.End.Day <- NULL
+PRC2024$Date.of.Breach.End.Month <- NULL
+PRC2024$Date.of.Breach.End.Year <- NULL
+PRC2024$Total.Records.Impacted.From.Letter <- NULL
+PRC2024$State.Records.Impacted.from.Source <- NULL
+PRC2024$State.Records.Impacted.from.Letter <- NULL
+```
+
+
+
+
+
+Step 10: Replaces UNKN and various words on the State column with equivalent in source column
+
+```{r}
+PRC2024$State <- ifelse(PRC2024$State == "UNKN", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "Unknown", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "Newfoundland and Labrador", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "BC", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "Berlin", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "British Columbia", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "Guangdong", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "New Providence", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "NS", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "Oneonta", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "Ontario", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "QC", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "Quebec", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "San Diego", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "State", PRC2024$Source, PRC2024$State)
+PRC2024$State <- ifelse(PRC2024$State == "Zurich", PRC2024$Source, PRC2024$State)
+
+```
+
+
+Step 11: Substitute two letter states for full State name
+
+```{r}
+PRC2024$State <- sub('HHS', 'Unkn', PRC2024$State)
+PRC2024$State <- sub('CA', 'California', PRC2024$State)
+PRC2024$State <- sub('DC', 'District of Columbia', PRC2024$State)
+PRC2024$State <- sub('DE', 'Delaware', PRC2024$State)
+PRC2024$State <- sub('NH', 'New Hampshire', PRC2024$State)
+PRC2024$State <- sub('IA', 'Iowa', PRC2024$State)
+PRC2024$State <- sub('IN', 'Indiana', PRC2024$State)
+PRC2024$State <- sub('MT', 'Montana', PRC2024$State)
+PRC2024$State <- sub('MA', 'Massachusetts', PRC2024$State)
+PRC2024$State <- sub('MD', 'Maryland', PRC2024$State)
+PRC2024$State <- sub('ME', 'Maine', PRC2024$State)
+PRC2024$State <- sub('VT', 'Vermont', PRC2024$State)
+PRC2024$State <- sub('WA', 'Washington', PRC2024$State)
+PRC2024$State <- sub('WI', 'California', PRC2024$State)
+PRC2024$State <- sub('TX', 'Texas', PRC2024$State)
+PRC2024$State <- sub('NJ', 'New Jersey', PRC2024$State)
+PRC2024$State <- sub('OR', 'Oregon', PRC2024$State)
+```
+
+
+
+
+Step 12: Split rows in the State column 
+
+```{r}
+library(tidyr)
+
+# Use separate_rows to split the 'state' column, considering both comma and semicolon as delimiters
+PRC2024 <- separate_rows(PRC2024, State, sep = "[,;]|\\band\\b")
+
+# Trim whitespace that might occur after splitting
+PRC2024$State <- trimws(PRC2024$State)
+
+```
+
+
+Step 13: This code removes [{"type":  from the beginning of the colum information type:
+
+```{r}
+# Remove '[{"type":' from the beginning of each string in the specified column
+PRC2024$Information.Types <- sub("^\\[\\{type:", "", PRC2024$Information.Types)
+PRC2024$Information.Types <- gsub("\\[UNKN\\]", "UNKN", PRC2024$Information.Types)
+
+```
+
+
+
+
+Step 14: Removes "Encryption status from beggining of encrytion status colums
+
+
+```{r}
+# Remove 'encryption_status' from the beginning of each entry in 'column_name'
+PRC2024$Encryption.Status <- sub("^encryption_status:", "", PRC2024$Encryption.Status)
+
+```
+
+
+
+
+
+
+15: Trims extra spaces in character columns
+
+```{r}
+# Loop over all columns in the dataframe
+PRC2024 <- lapply(PRC2024, function(x) {
+  # Check if the column is of character type
+  if (is.character(x)) {
+    # Attempt to convert encoding to UTF-8
+    x <- iconv(x, from = "latin1", to = "UTF-8", sub = "byte")
+    # Trim leading and trailing spaces from the character column
+    x <- trimws(x)
+  }
+  return(x)
+})
+
+# Convert the list back to a dataframe
+PRC2024 <- as.data.frame(PRC2024)
+
+
+```
+
+
+
+16: Removes [] from information types column 
+
+```{r}
+
+PRC2024$Information.Types <- gsub("\\[]", "", PRC2024$Information.Types)
+
+```
+
+
+
+
+
+
+17: Replacing empty strings with NA's 
+
+```{r}
+PRC2024[PRC2024 == ''] <- NA 
+
+```
+
+
+
+18: Replace NA values in columns with 'unkn'
+
+```{r}
+# Replace NA values in column 'a' with 'unkn'
+PRC2024$Information.Types[is.na(PRC2024$Information.Types)] <- "UNKN"
+PRC2024$Encryption.Status[is.na(PRC2024$Encryption.Status)] <- "UNKN"
+PRC2024$Information.Types.Description[is.na(PRC2024$Information.Types.Description)] <- "UNKN"
+PRC2024$Description.of.Breach[is.na(PRC2024$Description.of.Breach)] <- "UNKN"
+
+```
+
+
+19: Count how many NAs in dataset
+
+
+
+```{r}
+# Check for NAs in the entire dataset
+nas_in_dataset <- colSums(is.na(PRC2024))
+
+# Print the result
+print(nas_in_dataset)
+
+```
+
+
+
+
+
+```{r}
+view(PRC2024)
+```
+
+
+
+
+
+
+20: Summary of max record impacted 
+
+```{r}
+summary(PRC2024$Max.Records.Impacted)
+
+```
+
+
+
+
+
+   Min.   1st Qu.    Median      Mean   3rd Qu.      Max.      NA's 
+0.000e+00 6.000e+00 3.700e+02 6.567e+05 2.944e+03 3.000e+09      8124 
+
+
+
+
+
+Result of the summary of max records impacted is as follow: minimum is 0, first quartile (value below 25% of the data) is 6, median value is 370, mean, 656,700, 3rd quartile (value above 25% of the data) is 2,944 the max value in the data is 3 billion and there are 8,124 NA's. 
+
+
+21: If org type is MED how many na's
+
+```{r}
+na_countMED <- sum(is.na(PRC2024$Max.Records.Impacted[PRC2024$Organization.Type == "MED"]))
+print(na_countMED)
+
+# 1319 answer
+```
+
+
+
+
+22: Removes the date of breach end of the dataset
+
+```{r}
+PRC2024$Date.of.Breach.End.New <- NULL
+PRC2024$Date.of.Breach.End.String <- NULL
+```
+
+**
+
+
+23: Because there too many NAs in the date of breach (24,592) and reported date (2,489) then the following must be applied depending on if the organization is a MED organization or not: 
+
+Let's break down the requirements:
+
+If the Organization.Type = MED and 
+If Max.Records.Impacted >= 500 and 
+If Reported.Date.New is NA and 
+Date.of.Breach.New is not NA then Reported.Date.New = Date.of.Breach.New + 60 days
+
+
+If the Organization.Type = MED and 
+If Max.Records.Impacted >= 500 and 
+If Reported.Date.New is not NA and 
+If Date.of.Breach.New is NA then Date.of.Breach.New = Reported.Date.New - 60 days
+
+
+If the Organization.Type is not MED and 
+If Reported.Date.New is NA and 
+Date.of.Breach.New is not NA then Reported.Date.New = Date.of.Breach.New + 30 days
+
+
+If the Organization.Type is not MED and 
+If Reported.Date.New is not NA and 
+If Date.of.Breach.New is NA then Date.of.Breach.New = Reported.Date.New - 30 days
+
+
+
+```{r}
+
+for (i in 1:nrow(PRC2024)) {
+  if (PRC2024$Organization.Type[i] == "MED" && !is.na(PRC2024$Max.Records.Impacted[i]) && PRC2024$Max.Records.Impacted[i] >= 500) {
+    if (is.na(PRC2024$Reported.Date.New[i]) && !is.na(PRC2024$Date.of.Breach.New[i])) {
+      PRC2024$Reported.Date.New[i] <- PRC2024$Date.of.Breach.New[i] + as.difftime(60, units = "days")
+    } else if (!is.na(PRC2024$Reported.Date.New[i]) && is.na(PRC2024$Date.of.Breach.New[i])) {
+      PRC2024$Date.of.Breach.New[i] <- PRC2024$Reported.Date.New[i] - as.difftime(60, units = "days")
+    }
+  } else if (PRC2024$Organization.Type[i] != "MED") {
+    if (is.na(PRC2024$Reported.Date.New[i]) && !is.na(PRC2024$Date.of.Breach.New[i])) {
+      PRC2024$Reported.Date.New[i] <- PRC2024$Date.of.Breach.New[i] + as.difftime(30, units = "days")
+    } else if (!is.na(PRC2024$Reported.Date.New[i]) && is.na(PRC2024$Date.of.Breach.New[i])) {
+      PRC2024$Date.of.Breach.New[i] <- PRC2024$Reported.Date.New[i] - as.difftime(30, units = "days")
+    }
+  }
+}
+
+
+```
+
+
+
+
+
+```{r}
+na_countDateBreach3 <- sum(is.na(PRC2024$Date.of.Breach.New))
+na_countReported3 <- sum(is.na(PRC2024$Reported.Date.New))
+print(na_countDateBreach3)
+print(na_countReported3)
+```
+
+
+[1] 3736
+[1] 1891
+
+
+
+After the above code the number of NA's in the date of breach new and the reported date are 3,736 and 1,891 respectively. 
+
+The new NA's for MED organizations still 1319. 
+
+
+
+
+
+24: Extract the year from the date of breach column string since this column has more complete years
+
+
+```{r}
+library(stringr)
+PRC2024$Year.of.Breach <- str_extract(PRC2024$Date.of.Breach.New, "\\d{4}")
+PRC2024$Year.of.Breach <- as.numeric(PRC2024$Year.of.Breach)
+
+
+```
+
+
+25: Removes String columns 
+
+
+
+```{r}
+PRC2024$Date.of.Breach.String <- NULL
+PRC2024$Reported.Date.String <- NULL
+```
+
+
+#26: Clean up to the information types variable after EDA noted that the variables had empty strings that had to be corrected. 
+```{r}
+#PRC2024_clean$Information.Types[PRC2024_clean$Information.Types == ''] <- NA 
+
+```
+
+
+```{r}
+#PRC2024_clean$Information.Types[is.na(PRC2024_clean$Information.Types)] <- "UNKN"
+#view(PRC2024_clean)
+```
+
+
+
+
+27: Removes NA's from Dataset
+
+```{r}
+PRC2024_cleanV2 <- na.omit(PRC2024)
+view(PRC2024_cleanV2)
+
+```
+
+```{r}
+write.csv(PRC2024_cleanV2, "PRC2024_cleanV2.csv", row.names = FALSE)
+```
+
+
+28: Count how many NAs in dataset
+
+
+
+```{r}
+# Check for NAs in the entire dataset
+nas_in_dataset_clean <- colSums(is.na(PRC2024_cleanV2))
+
+# Print the result
+print(nas_in_dataset_clean)
+
+```
+
+
+
+```{r}
+summary(PRC2024_cleanV2)
+str(PRC2024_cleanV2)
+```
+
+
+
+```{r}
+PRC2024_cleanV2 <- PRC2024_cleanV2 %>% rename(Breach.Input = Breach.Impute)
+```
+
+
+
+
+29: Export to CSV
+
+```{r}
+write.csv(PRC2024_cleanV2, "PRC2024_CleanV2.csv", row.names = FALSE)
+
+```
+
+
+**END OF DATA CLEANING
+
+
+
+
+1: This counts how many meds organizations had breaches between 2015 to 2023
+
+
+```{r}
+library(dplyr)
+
+# Assuming your data frame is named PRC2024_cleanV2
+result <- PRC2024_cleanV2 %>%
+  dplyr::filter(Year.of.Breach >= 2015 & Year.of.Breach <= 2023 & Organization.Type == "MED") %>%
+  count()  # Count the number of rows
+
+# Print the result
+print(result$n)
+
+
+```
+
+[1] 4603
+
+
+There are 4,603 MED organizations had breaches between 2015 and 2023.
+
+
+
+ 2: INFO for the SAMPLE This code is needed for sample and population
+With this code I looked at the range of dates between 2015 and 2023 and counted how many records belonged to the healthcare organization that were more than 500 records affected 
+
+```{r}
+library(dplyr)
+
+# Assuming your data frame is named PRC2024_cleanV2
+result <- PRC2024_cleanV2 %>%
+  dplyr::filter(Year.of.Breach >= 2015 & Year.of.Breach <= 2023 & Max.Records.Impacted >= 500 & Organization.Type == "MED") %>%
+  summarise(count_records = n())
+
+# Print the result
+print(result$count_records)
+
+
+
+```
+
+[1] 4079
+
+There are 4,079 MED organizations with 500 or more records affected between 2015 and 2023. 
+
+3: This is the code for less than 500 records 
+
+```{r}
+library(dplyr)
+
+# Assuming your data frame is named PRC2024_cleanV2
+result2 <- PRC2024_cleanV2 %>%
+  dplyr::filter((Year.of.Breach >= 2015) & (Year.of.Breach <= 2023) & (Max.Records.Impacted < 500) & (Organization.Type == "MED")) %>%
+  summarise(count_records = n())
+
+# Print the result
+print(result2$count_records)
+
+```
+
+[1] 524
+
+There are 524 MED organizations with less than 500 records affected between 2015 and 2023.
+
+4: How many total data breaches between 2015 and 2023
+
+```{r}
+# Using base R to count the number of rows where Year1 is between 2015 and 2023
+count_breaches <- nrow(PRC2024_cleanV2[PRC2024_cleanV2$Year.of.Breach >= 2015 & PRC2024_cleanV2$Year.of.Breach <= 2023, ])
+
+# Print the count
+print(count_breaches)
+
+```
+
+[1] 22422
+
+There are 22,422 total data breaches between 2015 and 2023
+
+
+5: How many total data breaches
+
+
+```{r}
+count_breaches_all <- nrow(PRC2024_cleanV2[PRC2024_cleanV2$Year.of.Breach, ])
+
+# Print the count
+print(count_breaches_all)
+```
+
+[1] 25256
+
+Total 25256
+
+#EDA
+
+
+VISUALIZATIONS
+
+
+THE FOLLOWING CODE IS FOR VISUALIZATIONS
+
+
+
+Step 1: Visualizations for boxplot with levels and barplot 
+#need to add legend
+
+
+```{r}
+length(PRC2024_cleanV2$Breach.Type [PRC2024_cleanV2$Breach.Input== 'UNKN '])
+nrow(PRC2024_cleanV2)
+
+#Barplot code
+t <- table(PRC2024_cleanV2$Max.Records.Impacted, PRC2024_cleanV2$Breach.Input)
+barplot(t)
+t
+
+PRC2024_cleanV2$Max.Records.Impacted<- as.numeric(PRC2024_cleanV2$Max.Records.Impacted)
+PRC2024_cleanV2$Breach.Input<- as.factor(PRC2024_cleanV2$Breach.Input)
+PRC2024_cleanV2$State<- as.factor(PRC2024_cleanV2$State)
+str(PRC2024_cleanV2)
+levels(PRC2024_cleanV2$Breach.Input) #adds levels to barplot
+
+boxplot(Max.Records.Impacted~ Breach.Input, data=PRC2024_cleanV2) #boxplot for the records affected distribution in relation to the type of breach
+levels(PRC2024_cleanV2$State) #adds levels to the boxplot
+boxplot(Max.Records.Impacted~ State, data=PRC2024_cleanV2) #boxplot for the records affected distribution in relation to the state
+
+
+```
+
+Same code as above excluding outliers -- for comparison purposes
+
+
+```{r}
+length(PRC2024_cleanV2$Breach.Input[PRC2024_cleanV2$Breach.Input == 'UNKN '])
+nrow(PRC2024_cleanV2)
+
+# Barplot code remains unchanged as it doesn't inherently include outliers
+t <- table(PRC2024_cleanV2$Max.Records.Impacted, PRC2024_cleanV2$Breach.Input)
+barplot(t)
+t
+
+# Ensure data types are set correctly for the subsequent analysis
+PRC2024_cleanV2$Max.Records.Impacted <- as.numeric(PRC2024_cleanV2$Max.Records.Impacted)
+PRC2024_cleanV2$Breach.Input <- as.factor(PRC2024_cleanV2$Breach.Input)
+PRC2024_cleanV2$State <- as.factor(PRC2024_cleanV2$State)
+str(PRC2024_cleanV2)
+levels(PRC2024_cleanV2$Breach.Input) #adds levels to barplot
+
+# Modified boxplot code to exclude outliers
+boxplot(Max.Records.Impacted ~ Breach.Input, data = PRC2024_cleanV2, outline = FALSE) # boxplot for the records affected distribution in relation to the type of breach, excluding outliers
+levels(PRC2024_cleanV2$State) #adds levels to the boxplot
+boxplot(Max.Records.Impacted ~ State, data = PRC2024_cleanV2, outline = FALSE) # boxplot for the records affected distribution in relation to the state, excluding outliers
+
+```
+
+Barchart for Information types and Types of Breaches
+
+
+
+```{r}
+#Barplot code
+t <- table(PRC2024_cleanV2$Information.Types, PRC2024_cleanV2$Breach.Input)
+barplot(t)
+t
+
+PRC2024_cleanV2$Information.Types<- as.factor(PRC2024_cleanV2$Information.Types)
+PRC2024_cleanV2$Breach.Input<- as.factor(PRC2024_cleanV2$Breach.Input)
+str(PRC2024_cleanV2)
+levels(PRC2024_cleanV2$Breach.Input) #adds levels to barplot
+```
+
+
+
+Barchart for Information types and Org Types
+
+
+
+```{r}
+#Barplot code
+t <- table(PRC2024_cleanV2$Information.Types, PRC2024_cleanV2$Organization.Type)
+barplot(t)
+t
+
+PRC2024_cleanV2$Information.Types<- as.factor(PRC2024_cleanV2$Information.Types)
+PRC2024_cleanV2$Organization.Type<- as.factor(PRC2024_cleanV2$Organization.Type)
+str(PRC2024_cleanV2)
+levels(PRC2024_cleanV2$Organization.Type) #adds levels to barplot
+```
+
+
+Scatterplot of Year of Breach and Records affected 
+
+```{r}
+# Load the ggplot2 package
+library(ggplot2)
+
+
+# Creating a scatter plot with ggplot2
+ggplot(data = PRC2024_cleanV2, aes(x = Year.of.Breach, y = Max.Records.Impacted)) +
+  geom_point() +  # Add points
+  theme_minimal() +  # Use a minimal theme for the plot
+  labs(title = "Scatter Plot of Records Affected vs Year of Breach",
+       x = "Year of Breach",
+       y = "Records Affected")
+
+
+```
+
+
+2.0e+09 = 2 billion
+1.5e+09 = 1.5 billion
+1.0e+09 = 1 billion
+5.0e+08 = 5.3 million
+0.0e+00 = 0
+
+
+Excluding outliers from scatter plot
+
+
+```{r}
+# Load the necessary packages
+library(ggplot2)
+library(dplyr)
+
+# Calculate the IQR and the boundaries for outliers
+IQR_Records <- IQR(PRC2024_cleanV2$Max.Records.Impacted)
+Q1 <- quantile(PRC2024_cleanV2$Max.Records.Impacted, 0.25)
+Q3 <- quantile(PRC2024_cleanV2$Max.Records.Impacted, 0.75)
+lower_bound <- Q1 - 1.5 * IQR_Records
+upper_bound <- Q3 + 1.5 * IQR_Records
+
+# Filter out outliers from the data using dplyr::filter to avoid the conflict
+PRC2024_cleanV2_filtered <- PRC2024_cleanV2 %>%
+  dplyr::filter(Max.Records.Impacted >= lower_bound & Max.Records.Impacted <= upper_bound)
+
+# Creating a scatter plot with the filtered data
+ggplot(data = PRC2024_cleanV2_filtered, aes(x = Year.of.Breach, y = Max.Records.Impacted)) +
+  geom_point() +  # Add points
+  theme_minimal() +  # Use a minimal theme for the plot
+  labs(title = "Scatter Plot of Records Affected vs Year of Breach (Outliers Excluded)",
+       x = "Year of Breach",
+       y = "Records Affected")
+
+
+```
+
+
+HeatMap of Type of Type of Breaches and State
+
+
+
+
+
+```{r}
+# Load the packages
+library(ggplot2)
+library(reshape2)
+
+
+# Create a table with counts for each combination of Breaches.Types and State
+breach_table <- table(PRC2024_cleanV2$Breach.Input, PRC2024_cleanV2$State)
+
+# Convert the table to a dataframe for plotting
+PRC2024_cleanV2_for_heatmap <- as.data.frame(breach_table)
+
+
+# Creating the heatmap
+heatmap_plot <- ggplot(PRC2024_cleanV2_for_heatmap, aes(x = Var1, y = Var2, fill = Freq)) +
+  geom_tile() +  # This creates the tiles for the heatmap
+  scale_fill_gradient(low = "white", high = "red") +  # Gradient color from low to high frequency
+  theme_minimal() +  # Minimal theme for a cleaner look
+  labs(title = "Heatmap of Breach Types vs State",
+       x = "Breach Types",
+       y = "States",
+       fill = "Frequency")
+
+# Display the heatmap
+print(heatmap_plot)
+
+```
+
+
+
+MACHINE LEARNING MODELS AS PART OF EDA
+
+
+
+
+
+This R code performs an analysis of variance (ANOVA) to assess the relationship between the dependent variable Records_Affected and the independent variables Type_of_Breach and State in the PRC2024 Clean dataset.
+
+Effect of type of breach and state to all the records impacted.
+
+```{r}
+model_anova2<-aov(Max.Records.Impacted~ Breach.Input + State, data = PRC2024_cleanV2) # Fit ANOVA model with two independent variables
+summary(model_anova2) # Display summary statistics for the ANOVA model
+```
+
+
+Results: 
+
+               Df    Sum Sq   Mean Sq F value   Pr(>F)    
+Breach.Input     6 9.040e+15 1.507e+15   4.531 0.000134 ***
+State           57 2.036e+16 3.571e+14   1.074 0.327354    
+Residuals    25192 8.377e+18 3.325e+14                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+Breach.Input: This factor has 6 degrees of freedom (Df). The Sum of Squares (Sum Sq) is very large, meaning there's a lot of variability. The Mean Square (Mean Sq) is also quite large. The F value (4.531) is the ratio of the mean square of this factor to the mean square of the residuals, and its p-value (Pr(>F)) is 0.000134. Since this p-value is much smaller than 0.05, it means that Breach.Input has a significant effect.
+
+State: This factor has 57 degrees of freedom. Its F value (1.074) and p-value (0.327354) show that it does not have a significant effect because the p-value is much larger than 0.05.
+
+Residuals: These are the remaining variations not explained by Breach.Input or State. The Sum Sq is very large, with 25192 degrees of freedom.
+
+The "***" next to the p-value for Breach.Input indicates strong significance. In simple terms, Breach.Input significantly impacts the outcome, while State does not.
+
+
+
+This R code performs an analysis of variance (ANOVA) to assess the relationship between the dependent variable Max.Records.Impacted and the independent variable Type_of_Breach in the PRC2024 clean dataset. Additionally, it includes a Tukey's Honestly Significant Difference (HSD) post-hoc test to compare means between levels of the Type_of_Breach variable.
+
+Effect of the type of breach accross all years and all the records.
+
+```{r}
+
+PRC2024_cleanV2$Breach.Input <- factor(PRC2024_cleanV2$Breach.Input) #makes sure breach type is treated as factor
+
+
+model_anova3<-aov(Max.Records.Impacted~ Breach.Input, data = PRC2024_cleanV2) #ANOVA TEST
+summary(model_anova3) # Display summary statistics for the ANOVA model
+TukeyHSD(model_anova3, conf.level = 0.95) # Perform Tukey's HSD post-hoc test
+```
+
+RESULTS: 
+
+
+      Df    Sum Sq   Mean Sq F value   Pr(>F)    
+Breach.Input     6 9.040e+15 1.507e+15    4.53 0.000135 ***
+Residuals    25249 8.397e+18 3.326e+14                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+  Tukey multiple comparisons of means
+    95% family-wise confidence level
+
+Fit: aov(formula = Max.Records.Impacted ~ Breach.Input, data = PRC2024_cleanV2)
+
+$Breach.Input
+                   diff         lwr       upr     p adj
+DISC-CARD    77617.0580 -3613897.73 3769131.8 1.0000000
+HACK-CARD  1235712.0454 -2320195.49 4791619.6 0.9485282
+INSD-CARD     2926.3060 -3549658.02 3555510.6 1.0000000
+PHYS-CARD     2045.6930 -3960800.63 3964892.0 1.0000000
+PORT-CARD   -17700.6115 -3958657.02 3923255.8 1.0000000
+STAT-CARD   -22240.4888 -5449973.61 5405492.6 1.0000000
+HACK-DISC  1158094.9874   -92157.85 2408347.8 0.0906426
+INSD-DISC   -74690.7520 -1315460.33 1166078.8 0.9999974
+PHYS-DISC   -75571.3650 -2225642.23 2074499.5 0.9999999
+PORT-DISC   -95317.6695 -2204770.48 2014135.1 0.9999995
+STAT-DISC   -99857.5468 -4386924.22 4187209.1 1.0000000
+INSD-HACK -1232785.7394 -1978913.13 -486658.3 0.0000229
+PHYS-HACK -1233666.3525 -3141545.20  674212.5 0.4759168
+PORT-HACK -1253412.6569 -3115397.65  608572.3 0.4243956
+STAT-HACK -1257952.5342 -5428820.26 2912915.2 0.9742806
+PHYS-INSD     -880.6131 -1902558.47 1900797.2 1.0000000
+PORT-INSD   -20626.9175 -1876257.56 1835003.7 1.0000000
+STAT-INSD   -25166.7948 -4193201.65 4142868.1 1.0000000
+PORT-PHYS   -19746.3044 -2574479.30 2534986.7 1.0000000
+STAT-PHYS   -24286.1818 -4547096.17 4498523.8 1.0000000
+STAT-PORT    -4539.8773 -4508182.47 4499102.7 1.0000000
+
+
+
+This output has two parts: an ANOVA table and Tukey multiple comparisons.
+
+### ANOVA Table
+
+- **Breach.Input**: With 6 degrees of freedom, it has a significant effect on the dependent variable (Max.Records.Impacted), as indicated by a large F value (4.53) and a very small p-value (0.000135, ***).
+- **Residuals**: Represent unexplained variation, with 25249 degrees of freedom.
+
+### Tukey's Multiple Comparisons
+
+Tukey's test compares means of different groups within Breach.Input:
+
+- **INSD-HACK**: The difference between these breach types is significant (p adj = 0.0000229), with confidence intervals not including zero.
+- Most other comparisons have high p-values (close to 1), indicating no significant differences between those breach types.
+
+In summary, Breach.Input significantly affects the outcome, particularly the difference between INSD and HACK is significant. Other comparisons show no significant differences.
+
+
+ANOVA Model to assess whether there are statistically significant differences in the Max.Records.Impacted due to the different factors. 
+Max.Records.Impacted is the dependent variable
+Breach.Type + Reported.Date.New + Year.of.Breach = Independent variables 
+Year.of.Breach:Reported.Date.New = represents the interaction between the terms
+
+Year.of.Breach and Reported.Date.New. An interaction term is included when the effect of one independent variable on the dependent variable may depend on the level of another independent variable. In other words, it tests whether the relationship between Year.of.Breach and Max.Records.Impacted changes at different dates of Reported.Date.New.
+
+```{r}
+levels(PRC2024_cleanV2$Breach.Input)
+
+summary(PRC2024_cleanV2$Year.of.Breach)
+
+
+model<-aov(Max.Records.Impacted~ Breach.Input + Reported.Date.New + Year.of.Breach + Year.of.Breach:Reported.Date.New, data = PRC2024_cleanV2)
+summary(model)
+```
+
+[1] "CARD" "DISC" "HACK" "INSD" "PHYS" "PORT" "STAT"
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   2006    2016    2018    2018    2020    2023 
+                                    Df    Sum Sq   Mean Sq F value   Pr(>F)    
+Breach.Input                         6 9.040e+15 1.507e+15   4.531 0.000134 ***
+Reported.Date.New                    1 6.379e+13 6.379e+13   0.192 0.661381    
+Year.of.Breach                       1 2.555e+15 2.555e+15   7.684 0.005575 ** 
+Reported.Date.New:Year.of.Breach     1 8.417e+14 8.417e+14   2.532 0.111588    
+Residuals                        25246 8.394e+18 3.325e+14                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+
+
+
+Results from the model:
+
+The output includes ANOVA results for Breach.Input, Reported.Date.New, and Year.of.Breach:
+
+- **Breach.Input**: Significant effect (p-value = 0.000134, ***).
+- **Reported.Date.New**: No significant effect (p-value = 0.661381).
+- **Year.of.Breach**: Significant effect (p-value = 0.005575, **).
+- **Interaction (Reported.Date.New:Year.of.Breach)**: No significant effect (p-value = 0.111588).
+- **Residuals**: Represent unexplained variation.
+
+In summary, both Breach.Input and Year.of.Breach significantly impact the outcome, while Reported.Date.New and their interaction do not.
+
+
+
+```{r}
+PRC2024_cleanV2$Encryption.Status <- as.factor(PRC2024_cleanV2$Encryption.Status)
+summary(PRC2024_cleanV2)
+str(PRC2024_cleanV2)
+```
+
+
+Creating Interaction features between `encryption_status` and `information_types` 
+
+```{r}
+# Assuming encryption_status and information_types are columns in your data frame
+PRC2024_cleanV2$Interaction_Encryption_Info <- interaction(PRC2024_cleanV2$Encryption.Status, PRC2024_cleanV2$Information.Types, sep = "_")
+
+# Print the new column within the data frame
+print(PRC2024_cleanV2$Interaction_Encryption_Info)
+
+
+```
+
+Visualization with number of breaches per year
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+
+# Sample dataset
+set.seed(123) # For reproducibility
+PRC2024_cleanV2 <- data.frame(
+  Year.of.Breach = sample(2010:2020, 500, replace = TRUE)
+)
+
+# Calculate total breaches per year
+breaches_per_year <- PRC2024_cleanV2 %>%
+  group_by(Year.of.Breach) %>%
+  summarise(Total_Breaches = n())
+
+print(breaches_per_year)
+
+# Plot the total number of breaches per year with discrete x-axis for years
+ggplot(breaches_per_year, aes(x = factor(Year.of.Breach), y = Total_Breaches)) +
+  geom_line(aes(group = 1), color = "blue", size = 1) +
+  geom_point(color = "red", size = 2) +
+  labs(title = "Total Number of Breaches Per Year",
+       x = "Year",
+       y = "Total Breaches") +
+  theme_minimal() +
+  scale_x_discrete(breaks = seq(min(breaches_per_year$Year.of.Breach), max(breaches_per_year$Year.of.Breach), by = 1))
+
+
+
+```
+
+
+
+
+MACHINE LEARNING MODELS TO ANSWER RESEARCH QUESTIONS
+
+
+
+SPLITTING THE DATASET BEFORE MODEL CREATIONS 
+
+This split is for models that do not require the severity characteristic because it will not filter by MED organization
+
+
+
+```{r}
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Calculate number of data points in the dataset named PRC2024_cleanV2
+n <- nrow(PRC2024_cleanV2)
+n_train <- floor(0.70 * n)
+n_val <- floor(0.10 * n)
+n_test <- n - n_train - n_val  # This ensures all data is used
+
+# Create a random permutation of indices
+indices <- sample(seq_len(n))
+
+# Assign indices to each dataset
+train_indices <- indices[seq_len(n_train)]
+val_indices <- indices[(n_train + 1):(n_train + n_val)]
+test_indices <- indices[(n_train + n_val + 1):n]
+
+# Split the data
+train_data <- PRC2024_cleanV2[train_indices, ]
+val_data<- PRC2024_cleanV2[val_indices, ]
+test_data <- PRC2024_cleanV2[test_indices, ]
+
+```
+
+
+
+
+```{r}
+write.csv(train_data, "train_data.csv", row.names = FALSE)
+write.csv(val_data, "val_data.csv", row.names = FALSE)
+write.csv(test_data, "test_data.csv", row.names = FALSE)
+```
+
+
+
+```{r}
+view(train_data)
+view(test_data)
+view(val_data)
+```
+
+
+
+
+This split is for models that require the severity characteristic because it will filter by MED organization
+
+
+```{r}
+# Set seed for reproducibility
+set.seed(123)
+
+# Filter data for organization.type = "MED"
+filtered_data <- PRC2024_cleanV2[PRC2024_cleanV2$Organization.Type == "MED", ]
+
+# Calculate number of data points in the filtered dataset
+n <- nrow(filtered_data)
+n_train <- floor(0.70 * n)
+n_val <- floor(0.10 * n)
+n_test <- n - n_train - n_val  # This ensures all data is used
+
+# Create a random permutation of indices
+indices <- sample(seq_len(n))
+
+# Assign indices to each dataset
+train_indices <- indices[seq_len(n_train)]
+val_indices <- indices[(n_train + 1):(n_train + n_val)]
+test_indices <- indices[(n_train + n_val + 1):n]
+
+# Split the data
+train_data2 <- filtered_data[train_indices, ]
+val_data2 <- filtered_data[val_indices, ]
+test_data2 <- filtered_data[test_indices, ]
+
+
+```
+
+
+
+```{r}
+write.csv(train_data2, "train_data2.csv", row.names = FALSE)
+write.csv(val_data2, "val_data2.csv", row.names = FALSE)
+write.csv(test_data2, "test_data2.csv", row.names = FALSE)
+```
+
+
+```{r}
+view(train_data2)
+view(test_data2)
+view(val_data2)
+```
+
+
+
+
+....ONLY UPDATE FROM HERE UP....
+
+
+THE FOLLOWING MODELS ANSWER RESEARCH QUESTION 1-
+
+RQ1: What are the characteristics of data breaches that predict the nature and severity of the attacks most effectively?
+
+H1o
+There is no difference in the predictive ability of different characteristics of data breaches to identify the type of data breach attack and the attack level.
+H1a
+There is a difference in the predictive ability of different characteristics of data breaches to identify the type of data breach attack and the attack level
+
+(This question focuses on the characteristics of databreaches that predict medical databreaches, so for this model the train_data_sev saved and then filter only MED orgs.)
+
+
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(randomForest)
+library(xgboost)
+library(caret)
+library(pROC)
+
+# Assume the datasets are already loaded into R as train_data_sev, val_data_sev, and test_data_sev
+
+# Copy datasets and create new ones ending with _RQ1
+train_data_RQ1 <- train_data_sev
+val_data_RQ1 <- val_data_sev
+test_data_RQ1 <- test_data_sev
+
+# Create attack_size variable from the severity_category
+train_data_RQ1 <- train_data_RQ1 %>% mutate(attack_size = as.factor(severity_category))
+val_data_RQ1 <- val_data_RQ1 %>% mutate(attack_size = as.factor(severity_category))
+test_data_RQ1 <- test_data_RQ1 %>% mutate(attack_size = as.factor(severity_category))
+
+# Filter datasets to Organization.Type = "MED"
+train_data_RQ1 <- train_data_RQ1 %>% filter(Organization.Type == "MED")
+val_data_RQ1 <- val_data_RQ1 %>% filter(Organization.Type == "MED")
+test_data_RQ1 <- test_data_RQ1 %>% filter(Organization.Type == "MED")
+
+# Convert character variables to numerical values
+char_vars <- c("Breach.Input", "Information.Types", "Encryption.Status", "State")
+
+for (var in char_vars) {
+  levels <- unique(c(train_data_RQ1[[var]], val_data_RQ1[[var]], test_data_RQ1[[var]]))
+  train_data_RQ1[[var]] <- as.numeric(factor(train_data_RQ1[[var]], levels = levels))
+  val_data_RQ1[[var]] <- as.numeric(factor(val_data_RQ1[[var]], levels = levels))
+  test_data_RQ1[[var]] <- as.numeric(factor(test_data_RQ1[[var]], levels = levels))
+}
+
+# Prepare data for modeling
+predictors <- c("Breach.Input", "Information.Types", "Encryption.Status", "State")
+response <- "attack_size"
+
+train_matrix <- data.matrix(train_data_RQ1[, predictors])
+train_labels <- as.numeric(train_data_RQ1[[response]])
+
+val_matrix <- data.matrix(val_data_RQ1[, predictors])
+val_labels <- as.numeric(val_data_RQ1[[response]])
+
+test_matrix <- data.matrix(test_data_RQ1[, predictors])
+test_labels <- as.numeric(test_data_RQ1[[response]])
+
+# Ensure levels are consistent across datasets
+# Convert back to factor for training Random Forest
+train_labels_factor <- factor(train_labels, levels = unique(train_labels))
+val_labels_factor <- factor(val_labels, levels = unique(val_labels))
+test_labels_factor <- factor(test_labels, levels = unique(test_labels))
+
+# Train Random Forest model
+rf_model_RQ1 <- randomForest(x = train_matrix, y = train_labels_factor, importance = TRUE)
+rf_predictions_RQ1 <- predict(rf_model_RQ1, test_matrix)
+rf_predictions_numeric <- as.numeric(rf_predictions_RQ1)
+
+# Train XGBoost model
+xgb_model_RQ1 <- xgboost(data = train_matrix, label = train_labels - 1, nrounds = 100, objective = "multi:softmax", num_class = length(unique(train_labels)))
+xgb_predictions_RQ1 <- predict(xgb_model_RQ1, test_matrix)
+xgb_predictions_numeric <- as.numeric(xgb_predictions_RQ1) + 1
+
+# Evaluate models
+evaluate_model <- function(true_labels, predictions) {
+  true_labels_factor <- factor(true_labels, levels = unique(true_labels))
+  predictions_factor <- factor(predictions, levels = unique(true_labels))
+  
+  confusion <- confusionMatrix(predictions_factor, true_labels_factor)
+  roc_curve <- multiclass.roc(true_labels, predictions)
+  auc_value <- auc(roc_curve)
+  
+  list(
+    accuracy = confusion$overall['Accuracy'],
+    f1_score = confusion$byClass['F1'],
+    precision = confusion$byClass['Precision'],
+    recall = confusion$byClass['Recall'],  # Add this line for recall
+    roc_auc = auc_value,
+    confusion_matrix = confusion$table
+  )
+}
+
+
+rf_evaluation_RQ1 <- evaluate_model(test_labels, rf_predictions_numeric)
+xgb_evaluation_RQ1 <- evaluate_model(test_labels, xgb_predictions_numeric)
+
+# Print evaluation metrics
+print("Random Forest RQ1 Evaluation:")
+print(rf_evaluation_RQ1)
+
+print("XGBoost RQ1 Evaluation:")
+print(xgb_evaluation_RQ1)
+
+```
+
+
+Feaute importance plot RF
+
+```{r}
+# Random Forest Feature Importance
+rf_importance <- importance(rf_model_RQ1)
+rf_importance_df <- data.frame(Feature = rownames(rf_importance), Importance = rf_importance[,1])
+rf_importance_df <- rf_importance_df[order(rf_importance_df$Importance, decreasing = TRUE), ]
+
+# Plot Random Forest Feature Importance
+library(ggplot2)
+ggplot(rf_importance_df, aes(x = reorder(Feature, Importance), y = Importance)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  xlab("Feature") +
+  ylab("Importance") +
+  ggtitle("Random Forest Feature Importance")
+
+```
+
+
+
+
+Feauture importance plot XGBoost
+
+```{r}
+# XGBoost Feature Importance
+xgb_importance <- xgb.importance(model = xgb_model_RQ1)
+xgb_importance_df <- xgb_importance[order(xgb_importance$Gain, decreasing = TRUE), ]
+
+# Plot XGBoost Feature Importance
+ggplot(xgb_importance_df, aes(x = reorder(Feature, Gain), y = Gain)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  xlab("Feature") +
+  ylab("Importance") +
+  ggtitle("XGBoost Feature Importance")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+THE FOLLOWING MODELS ANSWER RESEARCH QUESTION 2-
+
+RQ2: Does the number of records affected is correlated to the severity of the cyber-attack?
+
+
+H20
+ The characteristics of data breaches cannot effectively predict the size of affected records.
+H2A
+The characteristics of data breaches are able to effectively predict the size of affected records
+
+
+These question explores all of the data breaches not only the medical ones.
+
+First, we are going to create the severity variable from the PRC Clean V2 dataset. 
+
+
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(scales)
+
+# Load existing dataset
+# Assuming your dataset is in a CSV file named 'PRC2024_CleanV2.csv'
+data <- read.csv('PRC2024_CleanV2.csv')
+
+# Normalize 'Max.Records.Impacted'
+data <- data %>%
+  mutate(normalized_records = rescale(Max.Records.Impacted))
+
+# Identify unique values in 'Breach.Input' and 'Organization.Type'
+unique_attacks <- unique(data$Breach.Input)
+unique_industries <- unique(data$Organization.Type)
+
+# Generate mappings for the unique values
+attack_mapping <- setNames(seq(0.1, 1, length.out = length(unique_attacks)), unique_attacks)
+industry_mapping <- setNames(seq(0.1, 1, length.out = length(unique_industries)), unique_industries)
+
+# Map 'Breach.Input' and 'Organization.Type' to numerical values
+data <- data %>%
+  mutate(attack_score = attack_mapping[Breach.Input],
+         industry_score = industry_mapping[Organization.Type])
+
+# Calculate severity score
+data <- data %>%
+  mutate(severity_score = 0.5 * normalized_records +
+                           0.3 * attack_score +
+                           0.2 * industry_score)
+
+# Function to create severity category based on given conditions
+create_severity <- function(data) {
+  data$severity_category <- with(data, ifelse(
+    Max.Records.Impacted >= 1 & Max.Records.Impacted <= 499, "Below500",
+    ifelse(Max.Records.Impacted >= 500 & Max.Records.Impacted <= 2000, "Low",
+           ifelse(Max.Records.Impacted >= 2001 & Max.Records.Impacted <= 4000, "Med", "High")
+    )))
+  return(data)
+}
+
+# Apply the function to the dataset
+data <- create_severity(data)
+
+# View the dataset with the new columns
+view(data)
+
+```
+
+
+Save the new dataset as 'prc_with_severity.csv'
+
+```{r}
+# Save the new dataset as 'prc_with_severity.csv'
+write.csv(data, 'prc_with_severity.csv', row.names = FALSE)
+```
+
+```{r}
+view(prc_with_severity)
+```
+
+
+Now lets split the new dataset to be used in the below models
+
+```{r}
+# Set seed for reproducibility
+set.seed(123)
+
+# Calculate number of data points in the dataset
+n <- nrow(data)
+n_train <- floor(0.70 * n)
+n_val <- floor(0.10 * n)
+n_test <- n - n_train - n_val  # This ensures all data is used
+
+# Create a random permutation of indices
+indices <- sample(seq_len(n))
+
+# Assign indices to each dataset
+train_indices <- indices[seq_len(n_train)]
+val_indices <- indices[(n_train + 1):(n_train + n_val)]
+test_indices <- indices[(n_train + n_val + 1):n]
+
+# Split the data
+train_data_sev <- data[train_indices, ]
+val_data_sev <- data[val_indices, ]
+test_data_sev <- data[test_indices, ]
+
+# Save the split datasets
+write.csv(train_data_sev, 'train_data_sev.csv', row.names = FALSE)
+write.csv(val_data_sev, 'val_data_sev.csv', row.names = FALSE)
+write.csv(test_data_sev, 'test_data_sev.csv', row.names = FALSE)
+
+# Print the first few rows of each dataset to verify
+view(train_data_sev)
+view(val_data_sev)
+view(test_data_sev)
+
+```
+
+
+
+Now lets convert the new train, val and test datasets to factor
+
+```{r}
+# Load necessary libraries
+library(tidyverse)
+
+# Function to convert all columns to factors
+convert_to_factors <- function(data) {
+  data %>%
+    mutate(across(everything(), as.factor))
+}
+
+# Apply the function to all datasets
+train_data_sev <- convert_to_factors(train_data_sev)
+val_data_sev <- convert_to_factors(val_data_sev)
+test_data_sev <- convert_to_factors(test_data_sev)
+```
+
+
+
+
+Model 1 - Multinational Regression, Multinational Naïve Bayes, Multiclass SVM, Random Forest and then create an ensemble of the best three models based on validation performance.
+
+(these models study all of the records not only medical records, therefore it should use the train_data_sev, test_data_sev and val_data_sev datasets)
+
+
+
+```{r}
+# Load necessary libraries
+library(caret)
+library(e1071)  # For Naive Bayes and SVM
+library(randomForest)
+library(nnet)   # For Multinomial Regression
+library(tidyverse)
+library(pROC)   # For ROC AUC
+
+# Load the split datasets
+train_dataRQ2 <- read.csv('train_data_sev.csv')
+val_dataRQ2 <- read.csv('val_data_sev.csv')
+test_dataRQ2 <- read.csv('test_data_sev.csv')
+
+# Ensure all variables are factors
+train_dataRQ2 <- train_dataRQ2 %>% mutate_if(is.character, as.factor)
+val_dataRQ2 <- val_dataRQ2 %>% mutate_if(is.character, as.factor)
+test_dataRQ2 <- test_dataRQ2 %>% mutate_if(is.character, as.factor)
+
+# Define the formula
+formula <- severity_category ~ normalized_records + attack_score + industry_score
+
+# Train models
+
+# Multinomial Regression
+set.seed(123)
+multinom_model <- tryCatch({
+  train(formula, data = train_dataRQ2, method = 'multinom', trControl = trainControl(method = 'cv'))
+}, error = function(e) {
+  print(e)
+  NULL
+})
+
+# Multinomial Naïve Bayes
+set.seed(123)
+nb_model <- tryCatch({
+  train(formula, data = train_dataRQ2, method = 'naive_bayes', trControl = trainControl(method = 'cv'))
+}, error = function(e) {
+  print(e)
+  NULL
+})
+
+# Multiclass SVM
+set.seed(123)
+svm_model <- tryCatch({
+  train(formula, data = train_dataRQ2, method = 'svmRadial', trControl = trainControl(method = 'cv'))
+}, error = function(e) {
+  print(e)
+  NULL
+})
+
+# Random Forest
+set.seed(123)
+rf_model <- tryCatch({
+  train(formula, data = train_dataRQ2, method = 'rf', trControl = trainControl(method = 'cv'))
+}, error = function(e) {
+  print(e)
+  NULL
+})
+
+# Check if models are successfully trained
+models <- list(multinom_model = multinom_model, nb_model = nb_model, svm_model = svm_model, rf_model = rf_model)
+model_names <- names(models)
+
+# Filter out any NULL models to prevent errors in prediction
+models <- models[!sapply(models, is.null)]
+model_names <- names(models)
+
+if (length(models) == 0) {
+  stop("No models were successfully trained.")
+}
+
+# Evaluation function to include F1 score, accuracy, precision, recall, and ROC AUC
+evaluate_model <- function(model, val_dataRQ2) {
+  pred <- predict(model, newdata = val_dataRQ2)
+  
+  # Confusion matrix for accuracy, precision, recall, F1 score
+  cm <- confusionMatrix(pred, val_dataRQ2$severity_category)
+  
+  # Extracting metrics
+  accuracy <- cm$overall['Accuracy']
+  precision <- cm$byClass['Precision']
+  recall <- cm$byClass['Recall']
+  f1_score <- cm$byClass['F1']
+  
+  # ROC AUC for multiclass
+  roc_curve <- multiclass.roc(val_dataRQ2$severity_category, as.numeric(pred))
+  auc_value <- auc(roc_curve)
+  
+  # Return all metrics as a list
+  return(list(
+    accuracy = accuracy,
+    precision = precision,
+    recall = recall,
+    f1_score = f1_score,
+    roc_auc = auc_value
+  ))
+}
+
+# Evaluate all models and print their performance
+performance_metrics <- lapply(models, evaluate_model, val_dataRQ2 = val_dataRQ2)
+names(performance_metrics) <- model_names
+
+# Print performance metrics for each model
+for (model_name in model_names) {
+  cat("Performance metrics for", model_name, ":\n")
+  print(performance_metrics[[model_name]])
+  cat("\n")
+}
+
+# Select the best three models based on accuracy
+best_models <- names(sort(sapply(performance_metrics, function(x) x$accuracy), decreasing = TRUE)[1:3])
+
+# Create an ensemble of the best three models
+ensemble_predict <- function(models, val_dataRQ2) {
+  predictions <- sapply(models, function(model) as.character(predict(model, newdata = val_dataRQ2)))
+  predictions <- as.data.frame(predictions)
+  colnames(predictions) <- best_models
+  ensemble_pred <- apply(predictions, 1, function(x) names(which.max(table(x))))
+  factor(ensemble_pred, levels = levels(val_dataRQ2$severity_category))
+}
+
+# Get the best model objects
+best_model_objects <- models[best_models]
+
+# Predict and evaluate ensemble on validation data
+ensemble_val_pred <- ensemble_predict(best_model_objects, val_dataRQ2)
+ensemble_val_cm <- confusionMatrix(ensemble_val_pred, val_dataRQ2$severity_category)
+
+# Calculate metrics for ensemble on validation data
+ensemble_val_accuracy <- ensemble_val_cm$overall['Accuracy']
+ensemble_val_precision <- ensemble_val_cm$byClass['Precision']
+ensemble_val_recall <- ensemble_val_cm$byClass['Recall']
+ensemble_val_f1 <- ensemble_val_cm$byClass['F1']
+ensemble_val_roc_curve <- multiclass.roc(val_dataRQ2$severity_category, as.numeric(ensemble_val_pred))
+ensemble_val_roc_auc <- auc(ensemble_val_roc_curve)
+
+# Print ensemble performance on validation data
+cat("Ensemble Validation Performance:\n")
+cat("Accuracy:", ensemble_val_accuracy, "\n")
+cat("Precision:", ensemble_val_precision, "\n")
+cat("Recall:", ensemble_val_recall, "\n")
+cat("F1 Score:", ensemble_val_f1, "\n")
+cat("ROC AUC:", ensemble_val_roc_auc, "\n\n")
+
+# Predict and evaluate ensemble on test data
+ensemble_test_pred <- ensemble_predict(best_model_objects, test_dataRQ2)
+ensemble_test_cm <- confusionMatrix(ensemble_test_pred, test_dataRQ2$severity_category)
+
+# Calculate metrics for ensemble on test data
+ensemble_test_accuracy <- ensemble_test_cm$overall['Accuracy']
+ensemble_test_precision <- ensemble_test_cm$byClass['Precision']
+ensemble_test_recall <- ensemble_test_cm$byClass['Recall']
+ensemble_test_f1 <- ensemble_test_cm$byClass['F1']
+ensemble_test_roc_curve <- multiclass.roc(test_dataRQ2$severity_category, as.numeric(ensemble_test_pred))
+ensemble_test_roc_auc <- auc(ensemble_test_roc_curve)
+
+# Print ensemble performance on test data
+cat("Ensemble Test Performance:\n")
+cat("Accuracy:", ensemble_test_accuracy, "\n")
+cat("Precision:", ensemble_test_precision, "\n")
+cat("Recall:", ensemble_test_recall, "\n")
+cat("F1 Score:", ensemble_test_f1, "\n")
+cat("ROC AUC:", ensemble_test_roc_auc, "\n")
+
+
+```
+multinom_model       nb_model      svm_model       rf_model 
+     0.6067327      0.9801980      0.5833663      0.9988119 
+ Accuracy 
+0.9837624 
+ Accuracy 
+0.9853523 
+
+
+To examine feature importance in the RF:
+
+```{r}
+# Feature importance for the Random Forest model
+importance(rf_model$finalModel)
+
+```
+
+     MeanDecreaseGini
+normalized_records      11128.73078
+attack_score               37.11319
+industry_score            366.40040
+
+
+PLOT
+
+```{r}
+# Load necessary libraries
+library(randomForest)
+library(ggplot2)
+
+# Assuming rf_model has been trained
+# Extract feature importance
+importance_values <- importance(rf_model$finalModel)
+importance_df <- data.frame(Feature = rownames(importance_values), 
+                            Importance = importance_values[, 1])
+
+# Sort by importance
+importance_df <- importance_df[order(importance_df$Importance, decreasing = TRUE), ]
+
+# Plot feature importance
+ggplot(importance_df, aes(x = reorder(Feature, Importance), y = Importance)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +  # Flip coordinates for a horizontal bar plot
+  theme_minimal() +
+  labs(title = "Feature Importance from Random Forest Model",
+       x = "Feature",
+       y = "Importance")
+
+```
+
+
+
+
+
+
+
+Coefficient Analysis in Multinomial Regression:
+
+
+```{r}
+# Coefficients for the Multinomial Regression model
+summary(multinom_model$finalModel)
+
+```
+Call:
+nnet::multinom(formula = .outcome ~ ., data = dat, decay = param$decay)
+
+Coefficients:
+     (Intercept) normalized_records attack_score industry_score
+High   -2.083931         120039.354    0.5197279       1.685601
+Low    -1.806227         -22494.578    1.1480111       1.539854
+Med    -2.855149          -9458.702    1.2253074       1.664927
+
+Std. Errors:
+     (Intercept) normalized_records attack_score industry_score
+High  0.04882020       1.383802e-07    0.1020955     0.08643957
+Low   0.04489863       6.543762e-08    0.0904794     0.08099210
+Med   0.06688793       9.582029e-08    0.1254091     0.11669259
+
+Residual Deviance: 34591.28 
+AIC: 34615.28 
+
+
+
+
+
+Correlation Analysis:
+
+Since severity_category is categorical, we can use a different approach to quantify the relationship, such as a an ANOVA test:
+
+
+
+
+```{r}
+# ANOVA to see how Max.Records.Impacted varies across severity categories
+anova_results <- aov(Max.Records.Impacted ~ severity_category, data = train_dataRQ2)
+summary(anova_results)
+
+# Tukey's Honest Significant Difference test
+posthoc_results <- TukeyHSD(aov(Max.Records.Impacted ~ severity_category, data = train_dataRQ2))
+print(posthoc_results)
+
+
+```
+                     Df    Sum Sq   Mean Sq F value   Pr(>F)    
+severity_category     3 1.826e+16 6.086e+15   16.35 1.32e-10 ***
+Residuals         17675 6.580e+18 3.723e+14                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+  Tukey multiple comparisons of means
+    95% family-wise confidence level
+
+Fit: aov(formula = Max.Records.Impacted ~ severity_category, data = train_dataRQ2)
+
+$severity_category
+                       diff        lwr        upr     p adj
+High-Below500  2397199.1669  1462646.5  3331751.8 0.0000000
+Low-Below500       995.1897  -993959.5   995949.9 1.0000000
+Med-Below500      2784.1195 -1452741.4  1458309.6 1.0000000
+Low-High      -2396203.9772 -3536110.7 -1256297.3 0.0000004
+Med-High      -2394415.0474 -3952621.3  -836208.8 0.0004592
+Med-Low           1788.9298 -1593376.6  1596954.4 1.0000000
+
+
+
+Visualization
+
+```{r}
+library(ggplot2)
+
+# Boxplot
+ggplot(train_dataRQ2, aes(x = severity_category, y = Max.Records.Impacted)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Boxplot of Max.Records.Impacted by Severity Category",
+       x = "Severity Category",
+       y = "Max.Records.Impacted")
+
+# Violin plot
+ggplot(train_dataRQ2, aes(x = severity_category, y = Max.Records.Impacted)) +
+  geom_violin() +
+  theme_minimal() +
+  labs(title = "Violin Plot of Max.Records.Impacted by Severity Category",
+       x = "Severity Category",
+       y = "Max.Records.Impacted")
+
+```
+
+
+
+
+MODEL 2:
+
+
+Ordinal Regression, XGBoost, multinomial regression, Random Forest and then create an ensemble of the best three models based on validation performance
+
+(these models study all of the records not only medical records, therefore it should use the train_data_sev, test_data_sev and val_data_sev datasets)
+
+
+
+
+
+
+
+
+```{r}
+# Load necessary libraries
+library(caret)
+library(nnet)  # For Multinomial Regression and Perceptron
+library(xgboost)  # For XGBoost
+library(randomForest)
+library(tidyverse)
+library(MLmetrics)
+library(pROC)
+
+# Load the split datasets
+train_dataRQ2 <- read.csv('train_data_sev.csv')
+val_dataRQ2 <- read.csv('val_data_sev.csv')
+test_dataRQ2 <- read.csv('test_data_sev.csv')
+
+# Ensure all variables are factors
+train_dataRQ2 <- train_dataRQ2 %>% mutate_if(is.character, as.factor)
+val_dataRQ2 <- val_dataRQ2 %>% mutate_if(is.character, as.factor)
+test_dataRQ2 <- test_dataRQ2 %>% mutate_if(is.character, as.factor)
+
+# Ensure severity_category is a factor with the same levels across all datasets
+train_dataRQ2$severity_category <- factor(train_dataRQ2$severity_category)
+val_dataRQ2$severity_category <- factor(val_dataRQ2$severity_category, levels = levels(train_dataRQ2$severity_category))
+test_dataRQ2$severity_category <- factor(test_dataRQ2$severity_category, levels = levels(train_dataRQ2$severity_category))
+
+# Define the formula
+formula <- severity_category ~ normalized_records + attack_score + industry_score
+
+# Train models
+
+# Multinomial Regression
+set.seed(123)
+multinom_model_rq2 <- multinom(formula, data = train_dataRQ2)
+
+# Perceptron (using neural network with a single layer)
+set.seed(123)
+perc_model_rq2 <- train(formula, data = train_dataRQ2, method = 'nnet', linout = TRUE, trace = FALSE, maxit = 200)
+
+# XGBoost
+set.seed(123)
+train_matrix_rq2 <- xgb.DMatrix(data = as.matrix(dplyr::select(train_dataRQ2, normalized_records, attack_score, industry_score)), label = as.numeric(train_dataRQ2$severity_category) - 1)
+val_matrix_rq2 <- xgb.DMatrix(data = as.matrix(dplyr::select(val_dataRQ2, normalized_records, attack_score, industry_score)), label = as.numeric(val_dataRQ2$severity_category) - 1)
+
+xgb_params <- list(
+  objective = "multi:softprob",
+  num_class = length(unique(train_dataRQ2$severity_category)),
+  eval_metric = "mlogloss"
+)
+
+xgb_model_rq2 <- xgb.train(
+  params = xgb_params,
+  data = train_matrix_rq2,
+  nrounds = 100,
+  watchlist = list(val = val_matrix_rq2),
+  early_stopping_rounds = 10,
+  print_every_n = 10
+)
+
+# Random Forest
+set.seed(123)
+rf_model_rq2 <- train(formula, data = train_dataRQ2, method = 'rf', trControl = trainControl(method = 'cv'))
+
+# Custom prediction functions with debugging
+
+predict_multinom_rq2 <- function(model, val_data) {
+  pred <- predict(model, newdata = val_data)
+  print(paste("Multinomial Regression - Length of predictions:", length(pred)))
+  return(pred)
+}
+
+predict_perc_rq2 <- function(model, val_data) {
+  pred <- predict(model, newdata = val_data)
+  print(paste("Perceptron - Length of predictions:", length(pred)))
+  return(pred)
+}
+
+predict_xgb_rq2 <- function(model, val_data) {
+  pred <- predict(model, as.matrix(dplyr::select(val_data, normalized_records, attack_score, industry_score)))
+  pred <- max.col(matrix(pred, ncol = length(unique(train_dataRQ2$severity_category)))) - 1
+  pred <- factor(pred, levels = 0:(length(unique(train_dataRQ2$severity_category)) - 1), labels = levels(train_dataRQ2$severity_category))
+  print(paste("XGBoost - Length of predictions:", length(pred)))
+  return(pred)
+}
+
+predict_rf_rq2 <- function(model, val_data) {
+  pred <- predict(model, newdata = val_data)
+  print(paste("Random Forest - Length of predictions:", length(pred)))
+  return(pred)
+}
+
+# Modify the evaluation function to include accuracy, precision, recall, F1, and ROC AUC
+evaluate_model_rq2 <- function(predict_func, model, val_data) {
+  pred <- predict_func(model, val_data)
+  pred <- factor(pred, levels = levels(val_data$severity_category)) 
+  
+  # Confusion matrix and derived metrics
+  cm <- confusionMatrix(pred, val_data$severity_category)
+  accuracy <- cm$overall['Accuracy']
+  precision <- cm$byClass['Precision']
+  recall <- cm$byClass['Recall']
+  f1 <- F1_Score(y_true = val_data$severity_category, y_pred = pred)
+  
+  # ROC AUC calculation for binary classification
+  roc_auc <- NA
+  if (length(unique(val_data$severity_category)) == 2) {
+    roc_auc <- roc(as.numeric(val_data$severity_category), as.numeric(pred))$auc
+  }
+  
+  return(c(Accuracy = accuracy, Precision = precision, Recall = recall, F1 = f1, ROC_AUC = roc_auc))
+}
+
+# Evaluate all models for multiple metrics
+metrics_rq2 <- sapply(seq_along(models_rq2), function(i) evaluate_model_rq2(predict_model_rq2[[i]], models_rq2[[i]], val_dataRQ2))
+
+# Convert to data frame for easier reading
+metrics_df_rq2 <- as.data.frame(metrics_rq2, row.names = c("Accuracy", "Precision", "Recall", "F1", "ROC_AUC"))
+colnames(metrics_df_rq2) <- model_names_rq2
+print(metrics_df_rq2)
+
+# Select the best three models based on accuracy
+accuracy_values <- as.numeric(metrics_df_rq2["Accuracy", ])
+best_model_indices <- order(accuracy_values, decreasing = TRUE)[1:3]
+best_models_rq2 <- model_names_rq2[best_model_indices]
+
+# Get the corresponding prediction functions for the top three models
+best_predict_funcs_rq2 <- predict_model_rq2[best_model_indices]
+
+# Check for missing values in the validation data
+print("Checking for missing values in validation data")
+print(sum(is.na(val_dataRQ2)))
+
+# Check lengths of predictions for each model before combining them in the ensemble
+for (i in seq_along(best_model_objects_rq2)) {
+  pred_length <- length(best_predict_funcs_rq2[[i]](best_model_objects_rq2[[i]], val_dataRQ2))
+  print(paste("Length of predictions for model", best_models_rq2[i], ":", pred_length))
+}
+
+# Updated ensemble prediction function with debugging
+ensemble_predict_rq2 <- function(models, predict_funcs, val_data) {
+  predictions <- sapply(seq_along(models), function(i) {
+    pred <- as.character(predict_funcs[[i]](models[[i]], val_data))
+    print(paste("Model", i, "prediction length:", length(pred)))  # Debugging line
+    return(pred)
+  })
+  predictions <- as.data.frame(predictions)
+  colnames(predictions) <- best_models_rq2
+  
+  # Apply the majority vote ensemble by using max count for each row
+  ensemble_pred <- apply(predictions, 1, function(x) {
+    tbl <- table(x)
+    majority_vote <- names(which.max(tbl))
+    return(majority_vote)
+  })
+  
+  # Convert to factor to match severity_category levels
+  ensemble_pred <- factor(ensemble_pred, levels = levels(val_data$severity_category))
+  
+  return(ensemble_pred)
+}
+
+# Get the best model objects
+best_model_objects_rq2 <- models_rq2[match(best_models_rq2, model_names_rq2)]
+
+# Generate ensemble predictions
+ensemble_val_pred_rq2 <- ensemble_predict_rq2(best_model_objects_rq2, best_predict_funcs_rq2, val_dataRQ2)
+
+# Debugging: Check the lengths of predictions and actual values
+print(paste("Length of ensemble predictions:", length(ensemble_val_pred_rq2)))
+print(paste("Length of actual values:", length(val_dataRQ2$severity_category)))
+
+# Ensure lengths are the same before confusion matrix
+if (length(ensemble_val_pred_rq2) == length(val_dataRQ2$severity_category)) {
+  ensemble_val_accuracy_rq2 <- confusionMatrix(ensemble_val_pred_rq2, val_dataRQ2$severity_category)$overall['Accuracy']
+  print(ensemble_val_accuracy_rq2)
+} else {
+  print("Error: Lengths of predictions and actual values do not match!")
+}
+
+
+```
+[conflicted] Removing existing preference.
+[conflicted] Will prefer dplyr::select over any other package.
+# weights:  20 (12 variable)
+initial  value 24508.298010 
+iter  10 value 20713.617259
+iter  20 value 20409.723212
+iter  30 value 17297.733415
+final  value 17295.639087 
+converged
+[1]	val-mlogloss:0.853852 
+Will train until val_mlogloss hasn't improved in 10 rounds.
+
+[11]	val-mlogloss:0.033565 
+[21]	val-mlogloss:0.001835 
+[31]	val-mlogloss:0.000241 
+[41]	val-mlogloss:0.000159 
+[51]	val-mlogloss:0.000152 
+[61]	val-mlogloss:0.000149 
+[71]	val-mlogloss:0.000146 
+[81]	val-mlogloss:0.000144 
+[91]	val-mlogloss:0.000141 
+[100]	val-mlogloss:0.000140 
+note: only 2 unique complexity parameters in default grid. Truncating the grid to 2 .
+
+[1] "Multinomial Regression - Length of predictions: 2525"
+[1] "Length of actual values: 2525"
+[1] "Perceptron - Length of predictions: 2525"
+[1] "Length of actual values: 2525"
+[1] "XGBoost - Length of predictions: 2525"
+[1] "Length of actual values: 2525"
+[1] "Random Forest - Length of predictions: 2525"
+[1] "Length of actual values: 2525"
+Multinomial Regression             Perceptron                XGBoost          Random Forest 
+             0.6067327              0.9453465              0.2586139              0.9988119 
+[1] "Random Forest - Length of predictions: 2525"
+[1] "Perceptron - Length of predictions: 2525"
+[1] "Multinomial Regression - Length of predictions: 2525"
+[1] "Length of ensemble predictions: 2525"
+[1] "Length of actual values: 2525"
+ Accuracy 
+0.9457426 
+[1] "Random Forest - Length of predictions: 5052"
+[1] "Perceptron - Length of predictions: 5052"
+[1] "Multinomial Regression - Length of predictions: 5052"
+[1] "Length of ensemble predictions: 5052"
+[1] "Length of actual values: 5052"
+ Accuracy 
+0.9532858 
+
+
+Feauture importance analysis
+
+
+```{r}
+# Load necessary libraries
+library(caret)
+
+# Calculate feature importance for the Random Forest model
+rf_importance <- varImp(rf_model_rq2, scale = TRUE)
+print(rf_importance)
+
+# Remove rows with NA values from the importance data
+rf_importance_filtered <- rf_importance$importance[complete.cases(rf_importance$importance), , drop = FALSE]
+
+# Sort the importance data in decreasing order and select the top 10
+top_rf_importance <- head(rf_importance_filtered[order(rf_importance_filtered[, 1], decreasing = TRUE), , drop = FALSE], 10)
+
+# Convert to a data frame for plotting if necessary
+top_rf_importance_df <- data.frame(Feature = rownames(top_rf_importance), Importance = top_rf_importance[, 1])
+
+# Plot the top 10 feature importance
+barplot(top_rf_importance_df$Importance, names.arg = top_rf_importance_df$Feature,
+        las = 2, main = "Top 10 Feature Importance in Random Forest",
+        col = "lightblue", cex.names = 0.7)
+
+```
+	
+Overall
+<dbl>
+normalized_records	100.000000			
+industry_score	2.968793			
+attack_score	0.000000			
+3 rows
+
+
+
+Correlation Analysis
+
+```{r}
+# Load necessary libraries
+library(tidyverse)
+
+# Ensure Max.Records.Impacted is numeric and Severity is a factor
+train_dataRQ2$Max.Records.Impacted <- as.numeric(as.character(train_dataRQ2$Max.Records.Impacted))
+train_dataRQ2$severity_category <- as.numeric(as.factor(train_dataRQ2$severity_category))
+
+# Calculate Pearson correlation
+correlation <- cor(train_dataRQ2$Max.Records.Impacted, train_dataRQ2$severity_category, method = "pearson")
+print(paste("Pearson Correlation:", correlation))
+
+# Detailed correlation test
+cor_test <- cor.test(train_dataRQ2$Max.Records.Impacted, train_dataRQ2$severity_category, method = "pearson")
+print(cor_test)
+
+```
+
+[1] "Pearson Correlation: 0.00433469052630427"
+
+	Pearson's product-moment correlation
+
+data:  train_dataRQ2$Max.Records.Impacted and train_dataRQ2$severity_category
+t = 0.57632, df = 17677, p-value = 0.5644
+alternative hypothesis: true correlation is not equal to 0
+95 percent confidence interval:
+ -0.01040690  0.01907439
+sample estimates:
+        cor 
+0.004334691 
+
+
+Visualizations
+
+
+```{r}
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)  # Ensure dplyr is loaded for filtering
+
+# Resolve conflict for the filter function
+conflicts_prefer(dplyr::filter)
+
+# Remove outliers using IQR for the scatter plot
+Q1 <- quantile(train_dataRQ2$Max.Records.Impacted, 0.25, na.rm = TRUE)
+Q3 <- quantile(train_dataRQ2$Max.Records.Impacted, 0.75, na.rm = TRUE)
+IQR_value <- IQR(train_dataRQ2$Max.Records.Impacted, na.rm = TRUE)
+
+# Define outlier limits
+lower_limit <- Q1 - 1.5 * IQR_value
+upper_limit <- Q3 + 1.5 * IQR_value
+
+# Filter data to exclude outliers using dplyr::filter
+filtered_train_data <- train_dataRQ2 %>%
+  dplyr::filter(Max.Records.Impacted >= lower_limit & Max.Records.Impacted <= upper_limit)
+
+# Scatter plot without outliers
+ggplot(filtered_train_data, aes(x = Max.Records.Impacted, y = severity_category)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "blue", se = FALSE) +
+  labs(title = "Scatter Plot of Max.Records.Impacted vs Severity (Without Outliers)",
+       x = "Max.Records.Impacted",
+       y = "Severity") +
+  theme_minimal()
+
+# Ensure Severity is a factor for the box plot
+filtered_train_data$severity_category <- factor(filtered_train_data$severity_category)
+
+# Box plot without outliers
+ggplot(filtered_train_data, aes(x = severity_category, y = Max.Records.Impacted)) +
+  geom_boxplot() +
+  labs(title = "Box Plot of Max.Records.Impacted by Severity (Without Outliers)",
+       x = "Severity",
+       y = "Max.Records.Impacted") +
+  theme_minimal()
+
+
+
+```
+
+
+
+
+
+THE FOLLOWING MODELS ANSWER RESEARCH QUESTION 3-
+
+RQ3: Does the demographics of a company influence the kind of cyber-attacks they experience?
+
+H30
+	There is no effect to the different types of cyber attacks from the characteristics of data breaches.
+H3A
+	There is an effect to the different types of cyber attacks from the characteristics of data breaches.
+
+
+(these models study all of the records not only medical records, therefore it should use the train_data, test_data and val_data datasets)
+
+
+Ordinary Regression: 
+
+
+Making sure all the datasets are formatted as factors
+
+```{r}
+# Load necessary libraries
+library(tidyverse)
+
+# Function to convert all columns to factors
+convert_to_factors <- function(data) {
+  data %>%
+    mutate(across(everything(), as.factor))
+}
+
+# Apply the function to all datasets
+train_data <- convert_to_factors(train_data)
+val_data <- convert_to_factors(val_data)
+test_data <- convert_to_factors(test_data)
+
+```
+
+
+Code for the ordinary regression
+
+
+```{r}
+# Load necessary libraries
+library(tidyverse)
+library(ordinal)
+library(caret)
+
+# Combine all datasets to unify factor levels
+combined_data <- bind_rows(
+  train_data %>% mutate(dataset = 'train'),
+  val_data %>% mutate(dataset = 'val'),
+  test_data %>% mutate(dataset = 'test')
+)
+
+# Ensure factors are properly formatted in the combined dataset
+combined_data <- combined_data %>%
+  mutate(across(everything(), as.factor))
+
+# Split back into original datasets
+train_data <- combined_data %>% dplyr::filter(dataset == 'train') %>% dplyr::select(-dataset)
+val_data <- combined_data %>% dplyr::filter(dataset == 'val') %>% dplyr::select(-dataset)
+test_data <- combined_data %>% dplyr::filter(dataset == 'test') %>% dplyr::select(-dataset)
+
+# Fit the ordinal regression model
+model <- clm(Breach.Input ~ Organization.Type + State + Information.Types, data = train_data)
+
+# Summary of the model
+summary(model)
+
+# Predict on validation data
+val_data$predictions <- predict(model, newdata = val_data, type = "class")
+
+# Ensure that predictions and actual values are factors with the same levels
+val_data$predictions <- factor(val_data$predictions, levels = levels(val_data$Breach.Input))
+
+# Confusion matrix for validation data
+val_conf_matrix <- confusionMatrix(val_data$predictions, val_data$Breach.Input)
+print(val_conf_matrix)
+
+# Predict on test data
+test_data$predictions <- predict(model, newdata = test_data, type = "class")
+
+# Ensure that predictions and actual values are factors with the same levels
+test_data$predictions <- factor(test_data$predictions, levels = levels(test_data$Breach.Input))
+
+# Confusion matrix for test data
+test_conf_matrix <- confusionMatrix(test_data$predictions, test_data$Breach.Input)
+print(test_conf_matrix)
+
+# Calculate accuracy
+val_accuracy <- sum(val_data$predictions == val_data$Breach.Input) / nrow(val_data)
+test_accuracy <- sum(test_data$predictions == test_data$Breach.Input) / nrow(test_data)
+
+# Print accuracy
+print(paste("Validation Accuracy:", val_accuracy))
+print(paste("Test Accuracy:", test_accuracy))
+
+
+```
+
+
+Feature of importance plot
+
+
+```{r}
+# Load necessary libraries
+library(tidyverse)
+library(ordinal)
+library(caret)
+
+# Fit the ordinal regression model
+model <- clm(Breach.Input ~ Organization.Type + State + Information.Types, data = train_data)
+
+# Summary of the model
+model_summary <- summary(model)
+
+# Extract coefficients and standard errors
+coefficients <- model_summary$coefficients
+coefficients <- coefficients[ , c("Estimate", "Std. Error")]
+
+# Calculate absolute standardized coefficients
+coefficients$Standardized <- abs(coefficients[, "Estimate"] / coefficients[, "Std. Error"])
+
+# Create a data frame for plotting
+feature_importance <- as.data.frame(coefficients)
+feature_importance$Feature <- rownames(feature_importance)
+feature_importance <- feature_importance[order(-feature_importance$Standardized), ]
+
+# Plot feature importance
+ggplot(feature_importance, aes(x = reorder(Feature, Standardized), y = Standardized)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Feature Importance for Ordinal Regression Model",
+       x = "Features",
+       y = "Standardized Coefficient (Absolute Value)") +
+  theme_minimal()
+
+# Display feature importance data frame
+print(feature_importance)
+
+```
+
+
+
+RANDOM FOREST ANALYSIS
+
+
+```{r}
+# Load necessary libraries
+library(ranger)
+library(caret)
+library(pROC)
+library(mltools) # For F1_Score
+
+# Custom macro F1 Score Function
+macro_F1_Score <- function(predicted, actual) {
+  f1_scores <- sapply(levels(actual), function(level) {
+    actual_binary <- ifelse(actual == level, 1, 0)
+    predicted_binary <- ifelse(predicted == level, 1, 0)
+    precision <- caret::posPredValue(as.factor(predicted_binary), as.factor(actual_binary), positive = "1")
+    recall <- caret::sensitivity(as.factor(predicted_binary), as.factor(actual_binary), positive = "1")
+    f1 <- ifelse(precision + recall == 0, 0, 2 * ((precision * recall) / (precision + recall)))
+    return(f1)
+  })
+  return(mean(f1_scores))
+}
+
+# Ensure Breach.Input is a factor and its levels match across datasets
+train_data$Breach.Input <- factor(train_data$Breach.Input)
+val_data$Breach.Input <- factor(val_data$Breach.Input, levels = levels(train_data$Breach.Input))
+test_data$Breach.Input <- factor(test_data$Breach.Input, levels = levels(train_data$Breach.Input))
+
+# Fit the Random Forest model using ranger
+rf_model <- ranger(
+  formula = Breach.Input ~ Organization.Type + State + Information.Types,
+  data = train_data,
+  importance = "impurity",
+  probability = TRUE,
+  num.trees = 500
+)
+
+# Predict on validation data
+val_pred <- predict(rf_model, data = val_data)$predictions
+val_pred_class <- factor(colnames(val_pred)[max.col(val_pred, ties.method = "random")], levels = levels(train_data$Breach.Input))
+
+# Ensure column names of val_pred match levels of Breach.Input
+colnames(val_pred) <- levels(train_data$Breach.Input)
+
+# Confusion matrix and evaluation metrics for validation data
+val_confusion <- confusionMatrix(val_pred_class, val_data$Breach.Input)
+val_accuracy <- val_confusion$overall['Accuracy']
+
+# Calculate precision, recall, and F1 score for each class and then average them
+val_precision <- mean(sapply(levels(val_data$Breach.Input), function(level) {
+  caret::posPredValue(as.factor(val_pred_class == level), as.factor(val_data$Breach.Input == level), positive = "TRUE")
+}))
+
+val_recall <- mean(sapply(levels(val_data$Breach.Input), function(level) {
+  caret::sensitivity(as.factor(val_pred_class == level), as.factor(val_data$Breach.Input == level), positive = "TRUE")
+}))
+
+val_f1 <- macro_F1_Score(val_pred_class, val_data$Breach.Input)
+
+# AUC-ROC for validation data
+val_roc <- pROC::multiclass.roc(val_data$Breach.Input, val_pred, levels = levels(val_data$Breach.Input))
+val_auc <- pROC::auc(val_roc)
+
+# Print validation metrics
+print("Validation Metrics:")
+print(paste("Accuracy: ", val_accuracy))
+print(paste("Precision: ", val_precision))
+print(paste("Recall: ", val_recall))
+print(paste("F1 Score: ", val_f1))
+print(paste("AUC-ROC: ", val_auc))
+
+# Predict on test data
+test_pred <- predict(rf_model, data = test_data)$predictions
+test_pred_class <- factor(colnames(test_pred)[max.col(test_pred, ties.method = "random")], levels = levels(train_data$Breach.Input))
+
+# Ensure column names of test_pred match levels of Breach.Input
+colnames(test_pred) <- levels(train_data$Breach.Input)
+
+# Confusion matrix and evaluation metrics for test data
+test_confusion <- confusionMatrix(test_pred_class, test_data$Breach.Input)
+test_accuracy <- test_confusion$overall['Accuracy']
+
+# Calculate precision, recall, and F1 score for each class and then average them
+test_precision <- mean(sapply(levels(test_data$Breach.Input), function(level) {
+  caret::posPredValue(as.factor(test_pred_class == level), as.factor(test_data$Breach.Input == level), positive = "TRUE")
+}))
+
+test_recall <- mean(sapply(levels(test_data$Breach.Input), function(level) {
+  caret::sensitivity(as.factor(test_pred_class == level), as.factor(test_data$Breach.Input == level), positive = "TRUE")
+}))
+
+test_f1 <- macro_F1_Score(test_pred_class, test_data$Breach.Input)
+
+# AUC-ROC for test data
+test_roc <- pROC::multiclass.roc(test_data$Breach.Input, test_pred, levels = levels(test_data$Breach.Input))
+test_auc <- pROC::auc(test_roc)
+
+# Print test metrics
+print("Test Metrics:")
+print(paste("Accuracy: ", test_accuracy))
+print(paste("Precision: ", test_precision))
+print(paste("Recall: ", test_recall))
+print(paste("F1 Score: ", test_f1))
+print(paste("AUC-ROC: ", test_auc))
+
+```
+
+[1] "Validation Metrics:"
+[1] "Accuracy:  0.420760697305864"
+[1] "Precision:  NaN"
+[1] "Recall:  0.152901256362599"
+[1] "F1 Score:  NA"
+[1] "AUC-ROC:  0.595415868629892"
+[1] "Test Metrics:"
+[1] "Accuracy:  0.413731697665216"
+[1] "Precision:  NaN"
+[1] "Recall:  0.149596747806152"
+[1] "F1 Score:  NA"
+[1] "AUC-ROC:  0.628303603635792"
+
+This results are explained in the one note file
+
+Feature importance plot
+
+
+```{r}
+# Load necessary library
+library(ranger)
+
+# Fit the Random Forest model using ranger
+rf_model <- ranger(
+  formula = Breach.Input ~ Organization.Type + State + Information.Types,
+  data = train_data,
+  importance = "impurity",
+  probability = TRUE,
+  num.trees = 500
+)
+
+# Get feature importance
+importance <- importance(rf_model)
+
+# Plot feature importance
+library(ggplot2)
+importance_df <- data.frame(
+  Feature = names(importance),
+  Importance = importance
+)
+ggplot(importance_df, aes(x = reorder(Feature, Importance), y = Importance)) +
+  geom_bar(stat = 'identity') +
+  coord_flip() +
+  xlab("Feature") +
+  ylab("Importance") +
+  ggtitle("Feature Importance Plot")
+
+```
+
+
+
+This plot is explain in the one note file.
+
+
+
+THE FOLLOWING MODELS ANSWER RESEARCH QUESTION 4- 
+
+RQ4: To what extend and direction the various types of cyber attacks evolved since 2015?
+
+H40
+	There is no significant relationship between the different types of attacks and the size of the types of attacks and how it increases it has increased since 2015.
+H4A
+	There is a significant relationship between the different types of attacks and the size of the types of attacks and how it increases it has increased since 2015.
+
+
+ANOVA
+
+1- The following code creates an ANOVA model exploring the relationship between the types of cyber attacks since 2015 for MED organizations and Records affected. 
+
+(This question focuses on the characteristics of databreaches that predict medical databreaches, so for this model the train_data2 split has to be used.)
+
+
+Convert evertything to factor
+
+```{r}
+
+# Load necessary libraries
+library(tidyverse)
+
+# Function to convert all columns to factors
+convert_to_factors <- function(data) {
+  data %>%
+    mutate(across(everything(), as.factor))
+}
+
+# Apply the function to all datasets
+train_data2 <- convert_to_factors(train_data2)
+val_data2 <- convert_to_factors(val_data2)
+test_data2 <- convert_to_factors(test_data2)
+
+```
+
+
+
+
+
+```{r}
+# Load necessary libraries
+library(tidyverse)
+library(caret)
+
+# Combine all datasets to unify factor levels
+combined_data <- bind_rows(
+  train_data2 %>% mutate(dataset = 'train'),
+  val_data2 %>% mutate(dataset = 'val'),
+  test_data2 %>% mutate(dataset = 'test')
+)
+
+# Create the 'Attack_Size' variable based on 'Severity'
+combined_data <- combined_data %>%
+  mutate(Attack_Size = Severity)
+
+# Convert to factor
+combined_data$Attack_Size <- factor(combined_data$Attack_Size)
+
+# Split back into original datasets
+train_data2 <- combined_data %>% dplyr::filter(dataset == 'train') %>% select(-dataset)
+val_data2 <- combined_data %>% dplyr::filter(dataset == 'val') %>% select(-dataset)
+test_data2 <- combined_data %>% dplyr::filter(dataset == 'test') %>% select(-dataset)
+
+# Check if factors have at least two levels
+valid_factors <- function(data, factors) {
+  sapply(data[factors], function(x) nlevels(x) > 1)
+}
+
+factors_to_check <- c("Year.of.Breach", "Attack_Size")
+print(valid_factors(train_data2, factors_to_check))
+
+# Remove levels with only one level
+train_data2 <- train_data2 %>%
+  dplyr::filter(
+    Year.of.Breach %in% levels(train_data2$Year.of.Breach)[table(train_data2$Year.of.Breach) > 1],
+    Attack_Size %in% levels(train_data2$Attack_Size)[table(train_data2$Attack_Size) > 1]
+  )
+
+# Perform ANOVA on the training data
+anova_model <- aov(as.numeric(as.character(Max.Records.Impacted)) ~ Year.of.Breach + Attack_Size, data = train_data2)
+
+# Summary of ANOVA
+summary(anova_model)
+
+# Perform Tukey's HSD test
+tukey_result <- TukeyHSD(anova_model)
+
+# Print Tukey's HSD test results
+print(tukey_result)
+
+# Optionally, visualize the Tukey HSD test results for better understanding
+plot(tukey_result)
+
+
+```
+
+Year.of.Breach    Attack_Size 
+          TRUE           TRUE 
+                 Df    Sum Sq   Mean Sq F value   Pr(>F)    
+Year.of.Breach   16 7.203e+13 4.502e+12   0.819 0.665143    
+Attack_Size       3 1.108e+14 3.693e+13   6.717 0.000162 ***
+Residuals      4004 2.201e+16 5.497e+12                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+  Tukey multiple comparisons of means
+    95% family-wise confidence level
+
+Fit: aov(formula = as.numeric(as.character(Max.Records.Impacted)) ~ Year.of.Breach + Attack_Size, data = train_data2)
+
+$Year.of.Breach
+                 diff        lwr       upr     p adj
+2008-2007    8461.250 -5728945.0 5745867.5 1.0000000
+2009-2007  -10198.933 -4329161.4 4308763.6 1.0000000
+2010-2007   38948.580 -4082410.5 4160307.6 1.0000000
+2011-2007   -1522.068 -4122881.1 4119837.0 1.0000000
+2012-2007  -13465.218 -4131896.6 4104966.2 1.0000000
+2013-2007   -2921.113 -4104463.3 4098621.0 1.0000000
+2014-2007  409867.241 -3686480.5 4506215.0 1.0000000
+2015-2007  476246.583 -3620101.1 4572594.3 1.0000000
+2016-2007   50228.626 -4031023.6 4131480.8 1.0000000
+2017-2007   -5457.257 -4087614.8 4076700.3 1.0000000
+2018-2007  218399.268 -3856590.6 4293389.1 1.0000000
+2019-2007   68403.221 -4002146.8 4138953.3 1.0000000
+2020-2007   31091.900 -4045465.9 4107649.7 1.0000000
+2021-2007   78634.742 -4005922.8 4163192.3 1.0000000
+2022-2007  114024.467 -3963321.2 4191370.2 1.0000000
+2023-2007  258510.901 -3836542.3 4353564.1 1.0000000
+2009-2008  -18660.183 -4337622.7 4300302.3 1.0000000
+2010-2008   30487.330 -4090871.7 4151846.4 1.0000000
+2011-2008   -9983.318 -4131342.4 4111375.7 1.0000000
+2012-2008  -21926.468 -4140357.9 4096504.9 1.0000000
+2013-2008  -11382.363 -4112924.5 4090159.8 1.0000000
+2014-2008  401405.991 -3694941.7 4497753.7 1.0000000
+2015-2008  467785.333 -3628562.4 4564133.0 1.0000000
+2016-2008   41767.376 -4039484.8 4123019.6 1.0000000
+2017-2008  -13918.507 -4096076.1 4068239.1 1.0000000
+2018-2008  209938.018 -3865051.8 4284927.9 1.0000000
+2019-2008   59941.971 -4010608.1 4130492.0 1.0000000
+2020-2008   22630.650 -4053927.1 4099188.4 1.0000000
+2021-2008   70173.492 -4014384.0 4154731.0 1.0000000
+2022-2008  105563.217 -3971782.5 4182908.9 1.0000000
+2023-2008  250049.651 -3845003.5 4345102.8 1.0000000
+2010-2009   49147.513 -1600460.7 1698755.7 1.0000000
+2011-2009    8676.865 -1640931.4 1658285.1 1.0000000
+2012-2009   -3266.284 -1645546.5 1639013.9 1.0000000
+2013-2009    7277.820 -1592176.8 1606732.4 1.0000000
+2014-2009  420066.175 -1166020.7 2006153.0 0.9999678
+2015-2009  486445.516 -1099641.4 2072532.4 0.9997749
+2016-2009   60427.559 -1486254.9 1607110.0 1.0000000
+2017-2009    4741.676 -1544328.2 1553811.6 1.0000000
+2018-2009  228598.202 -1301483.3 1758679.7 1.0000000
+2019-2009   78602.155 -1439615.4 1596819.7 1.0000000
+2020-2009   41290.833 -1492961.6 1575543.2 1.0000000
+2021-2009   88833.676 -1466549.6 1644216.9 1.0000000
+2022-2009  124223.401 -1412121.3 1660568.1 1.0000000
+2023-2009  268709.834 -1314030.7 1851450.4 0.9999999
+2011-2010  -40470.648 -1066809.1  985867.8 1.0000000
+2012-2010  -52413.798 -1066932.2  962104.6 1.0000000
+2013-2010  -41869.693  -985489.4  901750.0 1.0000000
+2014-2010  370918.661  -549860.8 1291698.1 0.9941509
+2015-2010  437298.003  -483481.5 1358077.5 0.9691717
+2016-2010   11280.046  -839831.0  862391.1 1.0000000
+2017-2010  -44405.837  -899847.7  811036.0 1.0000000
+2018-2010  179450.688  -641105.6 1000007.0 0.9999978
+2019-2010   29454.641  -768760.7  827670.0 1.0000000
+2020-2010   -7856.680  -836164.4  820451.0 1.0000000
+2021-2010   39686.162  -827135.8  906508.2 1.0000000
+2022-2010   75075.887  -757100.9  907252.7 1.0000000
+2023-2010  219562.321  -695440.9 1134565.5 0.9999918
+2012-2011  -11943.150 -1026461.5 1002575.2 1.0000000
+2013-2011   -1399.045  -945018.8  942220.7 1.0000000
+2014-2011  411389.309  -509390.2 1332168.8 0.9828232
+2015-2011  477768.651  -443010.8 1398548.1 0.9331503
+2016-2011   51750.694  -799360.3  902861.7 1.0000000
+2017-2011   -3935.189  -859377.1  851506.7 1.0000000
+2018-2011  219921.336  -600634.9 1040477.6 0.9999622
+2019-2011   69925.289  -728290.1  868140.7 1.0000000
+2020-2011   32613.968  -795693.7  860921.7 1.0000000
+2021-2011   80156.810  -786665.2  946978.8 1.0000000
+2022-2011  115546.535  -716630.2  947723.3 1.0000000
+2023-2011  260032.969  -654970.2 1175036.2 0.9999170
+2013-2012   10544.104  -920205.7  941293.9 1.0000000
+2014-2012  423332.459  -484253.3 1330918.2 0.9739514
+2015-2012  489711.800  -417873.9 1397297.5 0.9086325
+2016-2012   63693.844  -773125.7  900513.4 1.0000000
+2017-2012    8007.961  -833216.0  849232.0 1.0000000
+2018-2012  231864.486  -573858.5 1037587.5 0.9999020
+2019-2012   81868.439  -701090.6  864827.4 1.0000000
+2020-2012   44557.117  -769058.7  858172.9 1.0000000
+2021-2012   92099.960  -760693.9  944893.8 1.0000000
+2022-2012  127489.685  -690064.7  945044.1 1.0000000
+2023-2012  271976.119  -629748.8 1173701.1 0.9998186
+2014-2013  412788.355  -414787.9 1240364.6 0.9521306
+2015-2013  479167.696  -348408.6 1306744.0 0.8471724
+2016-2013   53149.739  -696141.7  802441.1 1.0000000
+2017-2013   -2536.144  -756743.3  751671.0 1.0000000
+2018-2013  221320.382  -493074.6  935715.4 0.9997439
+2019-2013   71324.335  -617294.2  759942.8 1.0000000
+2020-2013   34013.013  -689272.1  757298.1 1.0000000
+2021-2013   81555.856  -685534.8  848646.5 1.0000000
+2022-2013  116945.581  -610767.2  844658.3 1.0000000
+2023-2013  261432.014  -559712.6 1082576.6 0.9996374
+2015-2014   66379.341  -735056.3  867815.0 1.0000000
+2016-2014 -359638.615 -1079954.0  360676.8 0.9517227
+2017-2014 -415324.498 -1140752.0  310103.0 0.8586053
+2018-2014 -191467.973  -875410.1  492474.2 0.9999320
+2019-2014 -341464.020  -998435.9  315507.9 0.9322129
+2020-2014 -378775.342 -1071998.2  314447.5 0.8993966
+2021-2014 -331232.499 -1070045.5  407580.5 0.9822266
+2022-2014 -295842.774  -993684.1  401998.5 0.9899216
+2023-2014 -151356.341  -946148.8  643436.2 0.9999997
+2016-2015 -426017.957 -1146333.3  294297.4 0.8238080
+2017-2015 -481703.840 -1207131.4  243723.7 0.6562485
+2018-2015 -257847.315  -941789.5  426094.8 0.9972101
+2019-2015 -407843.361 -1064815.3  249128.5 0.7617196
+2020-2015 -445154.683 -1138377.5  248068.2 0.7113137
+2021-2015 -397611.841 -1136424.8  341201.2 0.9104559
+2022-2015 -362222.116 -1060063.4  335619.2 0.9329521
+2023-2015 -217735.682 -1012528.2  577056.8 0.9999492
+2017-2016  -55685.883  -690351.3  578979.5 1.0000000
+2018-2016  168170.642  -418627.4  754968.7 0.9999072
+2019-2016   18174.595  -536953.5  573302.7 1.0000000
+2020-2016  -19136.727  -616726.1  578452.6 1.0000000
+2021-2016   28406.116  -621516.8  678329.0 1.0000000
+2022-2016   63795.841  -539144.9  666736.6 1.0000000
+2023-2016  208282.275  -504634.4  921199.0 0.9998803
+2018-2017  223856.525  -369205.7  816918.8 0.9971711
+2019-2017   73860.478  -487885.0  635606.0 1.0000000
+2020-2017   36549.157  -567192.4  640290.7 1.0000000
+2021-2017   84091.999  -571492.2  739676.2 1.0000000
+2022-2017  119481.724  -489557.2  728520.6 0.9999995
+2023-2017  263968.158  -454113.4  982049.7 0.9979157
+2019-2018 -149996.047  -657036.3  357044.2 0.9998591
+2020-2018 -187307.369  -740512.3  365897.6 0.9992199
+2021-2018 -139764.526  -749126.8  469597.8 0.9999957
+2022-2018 -104374.801  -663356.2  454606.6 0.9999998
+2023-2018   40111.633  -636034.0  716257.2 1.0000000
+2020-2019  -37311.322  -556802.3  482179.7 1.0000000
+2021-2019   10231.521  -568696.5  589159.5 1.0000000
+2022-2019   45621.246  -480016.9  571259.3 1.0000000
+2023-2019  190107.679  -458743.7  838959.0 0.9998758
+2021-2020   47542.843  -572218.0  667303.7 1.0000000
+2022-2020   82932.568  -487366.7  653231.9 1.0000000
+2023-2020  227419.001  -458112.9  912950.9 0.9993934
+2022-2021   35389.725  -589532.7  660312.1 1.0000000
+2023-2021  179876.159  -551725.3  911477.6 0.9999885
+2023-2022  144486.434  -545715.3  834688.2 0.9999988
+
+$Attack_Size
+                     diff         lwr        upr     p adj
+High-Below500  334954.154     403.267  669505.04 0.0495908
+Low-Below500     7981.434 -335347.561  351310.43 0.9999235
+Med-Below500    20194.374 -383182.479  423571.23 0.9992395
+Low-High      -326972.720 -544529.106 -109416.34 0.0006582
+Med-High      -314759.780 -618353.041  -11166.52 0.0387215
+Med-Low         12212.940 -301027.176  325453.06 0.9996399
+
+
+
+
+Results in one note
+
+
+
+LSTM TIME SERIES MODELS --
+
+
+1- The following code creates a time series using the date of breach year from 2015 forward
+
+this model should only be looking at the attack size and year of breach variables to know and understand if the number of breaches per year since 2015 have increased or decrease. 
+
+Convert evertything to factor
+
+```{r}
+
+# Load necessary libraries
+library(tidyverse)
+
+# Function to convert all columns to factors
+convert_to_factors <- function(data) {
+  data %>%
+    mutate(across(everything(), as.factor))
+}
+
+# Apply the function to all datasets
+train_data_sev <- convert_to_factors(train_data_sev)
+val_data_sev <- convert_to_factors(val_data_sev)
+test_data_sev <- convert_to_factors(test_data_sev)
+
+```
+
+
+
+
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(keras)
+
+# Assuming train_data_sev, test_data_sev, and val_data_sev are already loaded as data frames
+# Copy the datasets to avoid compromising the original splits
+train_data_sev_RQ4 <- train_data_sev
+test_data_sev_RQ4 <- test_data_sev
+val_data_sev_RQ4 <- val_data_sev
+
+# Convert Year.of.Breach to numeric if it's a factor
+train_data_sev_RQ4$Year.of.Breach <- as.numeric(as.character(train_data_sev_RQ4$Year.of.Breach))
+test_data_sev_RQ4$Year.of.Breach <- as.numeric(as.character(test_data_sev_RQ4$Year.of.Breach))
+val_data_sev_RQ4$Year.of.Breach <- as.numeric(as.character(val_data_sev_RQ4$Year.of.Breach))
+
+# Filter datasets to include only data from 2015 onwards
+train_data_sev_RQ4 <- train_data_sev_RQ4 %>%
+  filter(Year.of.Breach >= 2015) %>%
+  dplyr::select(attack_size = severity_category, Year.of.Breach)
+
+test_data_sev_RQ4 <- test_data_sev_RQ4 %>%
+  filter(Year.of.Breach >= 2015) %>%
+  dplyr::select(attack_size = severity_category, Year.of.Breach)
+
+val_data_sev_RQ4 <- val_data_sev_RQ4 %>%
+  filter(Year.of.Breach >= 2015) %>%
+  dplyr::select(attack_size = severity_category, Year.of.Breach)
+
+# Convert all categorical variables to numeric values
+categorical_cols_train <- sapply(train_data_sev_RQ4, is.factor)
+train_data_sev_RQ4[categorical_cols_train] <- lapply(train_data_sev_RQ4[categorical_cols_train], as.numeric)
+
+categorical_cols_test <- sapply(test_data_sev_RQ4, is.factor)
+test_data_sev_RQ4[categorical_cols_test] <- lapply(test_data_sev_RQ4[categorical_cols_test], as.numeric)
+
+categorical_cols_val <- sapply(val_data_sev_RQ4, is.factor)
+val_data_sev_RQ4[categorical_cols_val] <- lapply(val_data_sev_RQ4[categorical_cols_val], as.numeric)
+
+# Function to preprocess data for LSTM
+preprocess_data <- function(data, timesteps) {
+  if (nrow(data) < timesteps) {
+    stop("Not enough data to create sequences. Number of rows should be greater than timesteps.")
+  }
+  
+  X <- array(0, dim = c(nrow(data) - timesteps + 1, timesteps, ncol(data) - 1))
+  y <- numeric(nrow(data) - timesteps + 1)
+  
+  for (i in 1:(nrow(data) - timesteps + 1)) {
+    X[i,,] <- as.matrix(data[i:(i + timesteps - 1), -ncol(data)])
+    y[i] <- data[i + timesteps - 1, ncol(data)]
+  }
+  
+  list(X = X, y = y)
+}
+
+# Define timesteps
+timesteps <- 10
+
+# Check if there is enough data for each dataset
+if (nrow(train_data_sev_RQ4) > timesteps & nrow(test_data_sev_RQ4) > timesteps & nrow(val_data_sev_RQ4) > timesteps) {
+  # Preprocess the datasets
+  train_processed <- preprocess_data(train_data_sev_RQ4, timesteps)
+  test_processed <- preprocess_data(test_data_sev_RQ4, timesteps)
+  val_processed <- preprocess_data(val_data_sev_RQ4, timesteps)
+  
+  # Define LSTM model
+  model <- keras_model_sequential() %>%
+    layer_lstm(units = 50, input_shape = c(timesteps, ncol(train_data_sev_RQ4) - 1)) %>%
+    layer_dense(units = 1)
+  
+  # Compile the model
+  model %>% compile(
+    loss = 'mse',
+    optimizer = 'adam'
+  )
+  
+  # Train the model
+  history <- model %>% fit(
+    train_processed$X, train_processed$y,
+    epochs = 50,
+    batch_size = 32,
+    validation_data = list(val_processed$X, val_processed$y)
+  )
+  
+  # Evaluate the model on test data
+  model %>% evaluate(test_processed$X, test_processed$y)
+  
+  # Predict and calculate performance metrics
+  predictions <- model %>% predict(test_processed$X)
+  actual <- test_processed$y
+  
+  # Calculate RMSE
+  rmse <- sqrt(mean((predictions - actual)^2))
+  print(paste("RMSE:", rmse))
+} else {
+  print("Not enough data to create sequences for LSTM model. Each dataset must have more rows than the number of timesteps.")
+}
+
+
+```
+
+Epoch 1/50
+491/491 [==============================] - 3s 4ms/step - loss: 3984476.7500 - val_loss: 3927537.0000
+Epoch 2/50
+491/491 [==============================] - 1s 2ms/step - loss: 3876649.2500 - val_loss: 3827013.7500
+Epoch 3/50
+491/491 [==============================] - 1s 2ms/step - loss: 3777922.7500 - val_loss: 3729742.2500
+Epoch 4/50
+491/491 [==============================] - 1s 3ms/step - loss: 3681761.7500 - val_loss: 3634594.7500
+Epoch 5/50
+491/491 [==============================] - 1s 2ms/step - loss: 3587508.2500 - val_loss: 3541191.0000
+Epoch 6/50
+491/491 [==============================] - 1s 2ms/step - loss: 3494897.2500 - val_loss: 3449342.5000
+Epoch 7/50
+491/491 [==============================] - 1s 3ms/step - loss: 3403778.7500 - val_loss: 3358935.7500
+Epoch 8/50
+491/491 [==============================] - 1s 2ms/step - loss: 3314065.7500 - val_loss: 3269897.7500
+Epoch 9/50
+491/491 [==============================] - 1s 2ms/step - loss: 3225695.5000 - val_loss: 3182180.2500
+Epoch 10/50
+491/491 [==============================] - 1s 2ms/step - loss: 3138625.0000 - val_loss: 3095747.5000
+Epoch 11/50
+491/491 [==============================] - 1s 2ms/step - loss: 3052826.2500 - val_loss: 3010578.2500
+Epoch 12/50
+491/491 [==============================] - 1s 2ms/step - loss: 2968287.2500 - val_loss: 2926658.5000
+Epoch 13/50
+491/491 [==============================] - 1s 2ms/step - loss: 2884989.7500 - val_loss: 2843975.5000
+Epoch 14/50
+491/491 [==============================] - 1s 2ms/step - loss: 2802925.5000 - val_loss: 2762522.5000
+Epoch 15/50
+491/491 [==============================] - 1s 2ms/step - loss: 2722087.7500 - val_loss: 2682293.0000
+Epoch 16/50
+491/491 [==============================] - 1s 2ms/step - loss: 2642473.5000 - val_loss: 2603287.7500
+Epoch 17/50
+491/491 [==============================] - 1s 2ms/step - loss: 2564083.0000 - val_loss: 2525503.0000
+Epoch 18/50
+491/491 [==============================] - 1s 2ms/step - loss: 2486900.0000 - val_loss: 2448927.0000
+Epoch 19/50
+491/491 [==============================] - 1s 3ms/step - loss: 2410947.7500 - val_loss: 2373577.0000
+Epoch 20/50
+491/491 [==============================] - 1s 2ms/step - loss: 2336194.7500 - val_loss: 2299429.5000
+Epoch 21/50
+491/491 [==============================] - 1s 2ms/step - loss: 2262668.0000 - val_loss: 2226505.2500
+Epoch 22/50
+491/491 [==============================] - 1s 2ms/step - loss: 2190345.2500 - val_loss: 2154789.2500
+Epoch 23/50
+491/491 [==============================] - 1s 2ms/step - loss: 2119244.7500 - val_loss: 2084283.1250
+Epoch 24/50
+491/491 [==============================] - 1s 2ms/step - loss: 2049343.5000 - val_loss: 2014995.7500
+Epoch 25/50
+491/491 [==============================] - 1s 3ms/step - loss: 1980664.0000 - val_loss: 1946902.2500
+Epoch 26/50
+491/491 [==============================] - 1s 2ms/step - loss: 1913184.3750 - val_loss: 1880037.8750
+Epoch 27/50
+491/491 [==============================] - 1s 2ms/step - loss: 1846917.5000 - val_loss: 1814366.3750
+Epoch 28/50
+491/491 [==============================] - 1s 2ms/step - loss: 1781861.5000 - val_loss: 1749906.8750
+Epoch 29/50
+491/491 [==============================] - 1s 2ms/step - loss: 1718006.6250 - val_loss: 1686659.5000
+Epoch 30/50
+491/491 [==============================] - 1s 2ms/step - loss: 1655359.7500 - val_loss: 1624607.1250
+Epoch 31/50
+491/491 [==============================] - 1s 2ms/step - loss: 1593919.0000 - val_loss: 1563763.0000
+Epoch 32/50
+491/491 [==============================] - 1s 2ms/step - loss: 1533681.1250 - val_loss: 1504129.3750
+Epoch 33/50
+491/491 [==============================] - 1s 2ms/step - loss: 1474644.6250 - val_loss: 1445686.8750
+Epoch 34/50
+491/491 [==============================] - 1s 2ms/step - loss: 1416822.5000 - val_loss: 1388477.7500
+Epoch 35/50
+491/491 [==============================] - 1s 2ms/step - loss: 1360205.2500 - val_loss: 1332437.3750
+Epoch 36/50
+491/491 [==============================] - 1s 2ms/step - loss: 1304756.3750 - val_loss: 1277597.2500
+Epoch 37/50
+491/491 [==============================] - 1s 2ms/step - loss: 1250538.2500 - val_loss: 1223970.6250
+Epoch 38/50
+491/491 [==============================] - 1s 2ms/step - loss: 1197493.0000 - val_loss: 1171517.5000
+Epoch 39/50
+491/491 [==============================] - 1s 2ms/step - loss: 1145665.1250 - val_loss: 1120290.8750
+Epoch 40/50
+491/491 [==============================] - 1s 2ms/step - loss: 1095016.5000 - val_loss: 1070229.0000
+Epoch 41/50
+491/491 [==============================] - 1s 2ms/step - loss: 1045576.0000 - val_loss: 1021388.5625
+Epoch 42/50
+491/491 [==============================] - 1s 2ms/step - loss: 997314.7500 - val_loss: 973718.5000
+Epoch 43/50
+491/491 [==============================] - 1s 2ms/step - loss: 950258.6875 - val_loss: 927250.8750
+Epoch 44/50
+491/491 [==============================] - 1s 2ms/step - loss: 904375.6250 - val_loss: 881966.9375
+Epoch 45/50
+491/491 [==============================] - 1s 2ms/step - loss: 859692.8125 - val_loss: 837859.4375
+Epoch 46/50
+491/491 [==============================] - 1s 2ms/step - loss: 816197.0000 - val_loss: 794966.1875
+Epoch 47/50
+491/491 [==============================] - 1s 2ms/step - loss: 773880.8125 - val_loss: 753239.4375
+Epoch 48/50
+491/491 [==============================] - 1s 2ms/step - loss: 732751.2500 - val_loss: 712686.8125
+Epoch 49/50
+491/491 [==============================] - 1s 2ms/step - loss: 692801.5625 - val_loss: 673327.5000
+Epoch 50/50
+491/491 [==============================] - 1s 2ms/step - loss: 654026.0000 - val_loss: 635143.0625
+140/140 [==============================] - 0s 639us/step - loss: 634933.5000
+140/140 [==============================] - 0s 637us/step
+[1] "RMSE: 796.82706794236"
+
+
+```{r}
+mean_severity <- mean(train_data_sev_RQ4$attack_size)
+relative_error <- (rmse / mean_severity) * 100
+print(paste("Relative Error:", relative_error, "%"))
+
+```
+
+
+
+LSTM with data normalization
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(keras)
+
+# Assuming train_data_sev, test_data_sev, and val_data_sev are already loaded as data frames
+# Copy the datasets to avoid compromising the original splits
+train_data_sev_RQ4 <- train_data_sev
+test_data_sev_RQ4 <- test_data_sev
+val_data_sev_RQ4 <- val_data_sev
+
+# Convert Year.of.Breach to numeric if it's a factor
+train_data_sev_RQ4$Year.of.Breach <- as.numeric(as.character(train_data_sev_RQ4$Year.of.Breach))
+test_data_sev_RQ4$Year.of.Breach <- as.numeric(as.character(test_data_sev_RQ4$Year.of.Breach))
+val_data_sev_RQ4$Year.of.Breach <- as.numeric(as.character(val_data_sev_RQ4$Year.of.Breach))
+
+# Filter datasets to include only data from 2015 onwards
+train_data_sev_RQ4 <- train_data_sev_RQ4 %>%
+  filter(Year.of.Breach >= 2015)
+test_data_sev_RQ4 <- test_data_sev_RQ4 %>%
+  filter(Year.of.Breach >= 2015)
+val_data_sev_RQ4 <- val_data_sev_RQ4 %>%
+  filter(Year.of.Breach >= 2015)
+
+# Inspect unique values in severity_category
+unique(train_data_sev_RQ4$severity_category)
+
+# Convert severity_category to numeric by mapping to explicit values if necessary
+# Assuming severity_category is a factor and needs explicit mapping
+severity_mapping <- c("Low" = 1, "Medium" = 2, "High" = 3)  # Example mapping, adjust as needed
+
+train_data_sev_RQ4$attack_size <- as.numeric(severity_mapping[as.character(train_data_sev_RQ4$severity_category)])
+test_data_sev_RQ4$attack_size <- as.numeric(severity_mapping[as.character(test_data_sev_RQ4$severity_category)])
+val_data_sev_RQ4$attack_size <- as.numeric(severity_mapping[as.character(val_data_sev_RQ4$severity_category)])
+
+# Remove rows with NAs in attack_size after conversion
+train_data_sev_RQ4 <- na.omit(train_data_sev_RQ4)
+test_data_sev_RQ4 <- na.omit(test_data_sev_RQ4)
+val_data_sev_RQ4 <- na.omit(val_data_sev_RQ4)
+
+# Select only the necessary columns
+train_data_sev_RQ4 <- train_data_sev_RQ4 %>%
+  dplyr::select(attack_size, Year.of.Breach)
+test_data_sev_RQ4 <- test_data_sev_RQ4 %>%
+  dplyr::select(attack_size, Year.of.Breach)
+val_data_sev_RQ4 <- val_data_sev_RQ4 %>%
+  dplyr::select(attack_size, Year.of.Breach)
+
+# Normalize the data
+normalize <- function(data) {
+  data <- as.data.frame(scale(data))
+  return(data)
+}
+
+train_data_sev_RQ4 <- normalize(train_data_sev_RQ4)
+test_data_sev_RQ4 <- normalize(test_data_sev_RQ4)
+val_data_sev_RQ4 <- normalize(val_data_sev_RQ4)
+
+# Function to preprocess data for LSTM
+preprocess_data <- function(data, timesteps) {
+  if (nrow(data) < timesteps) {
+    stop("Not enough data to create sequences. Number of rows should be greater than timesteps.")
+  }
+  
+  X <- array(0, dim = c(nrow(data) - timesteps + 1, timesteps, ncol(data) - 1))
+  y <- numeric(nrow(data) - timesteps + 1)
+  
+  for (i in 1:(nrow(data) - timesteps + 1)) {
+    X[i,,] <- as.matrix(data[i:(i + timesteps - 1), -ncol(data)])
+    y[i] <- data[i + timesteps - 1, ncol(data)]
+  }
+  
+  list(X = X, y = y)
+}
+
+# Define timesteps
+timesteps <- 10
+
+# Check if there is enough data for each dataset
+if (nrow(train_data_sev_RQ4) > timesteps & nrow(test_data_sev_RQ4) > timesteps & nrow(val_data_sev_RQ4) > timesteps) {
+  # Preprocess the datasets
+  train_processed <- preprocess_data(train_data_sev_RQ4, timesteps)
+  test_processed <- preprocess_data(test_data_sev_RQ4, timesteps)
+  val_processed <- preprocess_data(val_data_sev_RQ4, timesteps)
+  
+  # Define LSTM model
+  model <- keras_model_sequential() %>%
+    layer_lstm(units = 50, input_shape = c(timesteps, ncol(train_data_sev_RQ4) - 1)) %>%
+    layer_dense(units = 1)
+  
+  # Compile the model
+  model %>% compile(
+    loss = 'mse',
+    optimizer = 'adam'
+  )
+  
+  # Train the model
+  history <- model %>% fit(
+    train_processed$X, train_processed$y,
+    epochs = 50,
+    batch_size = 32,
+    validation_data = list(val_processed$X, val_processed$y)
+  )
+  
+  # Evaluate the model on test data
+  model %>% evaluate(test_processed$X, test_processed$y)
+  
+  # Predict and calculate performance metrics
+  predictions <- model %>% predict(test_processed$X)
+  actual <- test_processed$y
+  
+  # Calculate RMSE
+  rmse <- sqrt(mean((predictions - actual)^2))
+  print(paste("RMSE:", rmse))
+} else {
+  print("Not enough data to create sequences for LSTM model. Each dataset must have more rows than the number of timesteps.")
+}
+
+```
+
+Model with normalization ensuring the severity categories are correct and ensuring no NAs are introduced
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(keras)
+
+# Assuming train_data_sev, test_data_sev, and val_data_sev are already loaded as data frames
+# Copy the datasets to avoid compromising the original splits
+train_data_sev_RQ4 <- train_data_sev
+test_data_sev_RQ4 <- test_data_sev
+val_data_sev_RQ4 <- val_data_sev
+
+# Convert Year.of.Breach to numeric if it's a factor
+train_data_sev_RQ4$Year.of.Breach <- as.numeric(as.character(train_data_sev_RQ4$Year.of.Breach))
+test_data_sev_RQ4$Year.of.Breach <- as.numeric(as.character(test_data_sev_RQ4$Year.of.Breach))
+val_data_sev_RQ4$Year.of.Breach <- as.numeric(as.character(val_data_sev_RQ4$Year.of.Breach))
+
+# Filter datasets to include only data from 2015 onwards
+train_data_sev_RQ4 <- train_data_sev_RQ4 %>%
+  filter(Year.of.Breach >= 2015)
+test_data_sev_RQ4 <- test_data_sev_RQ4 %>%
+  filter(Year.of.Breach >= 2015)
+val_data_sev_RQ4 <- val_data_sev_RQ4 %>%
+  filter(Year.of.Breach >= 2015)
+
+# Inspect unique values in severity_category
+unique(train_data_sev_RQ4$severity_category)
+
+# Convert severity_category to numeric by mapping to explicit values if necessary
+# Assuming severity_category is a factor and needs explicit mapping
+severity_mapping <- c("Below500" = 0, "Low" = 1, "Med" = 2, "High" = 3)  # Example mapping, adjust as needed
+
+train_data_sev_RQ4$attack_size <- as.numeric(severity_mapping[as.character(train_data_sev_RQ4$severity_category)])
+test_data_sev_RQ4$attack_size <- as.numeric(severity_mapping[as.character(test_data_sev_RQ4$severity_category)])
+val_data_sev_RQ4$attack_size <- as.numeric(severity_mapping[as.character(val_data_sev_RQ4$severity_category)])
+
+# Remove rows with NAs in attack_size after conversion
+train_data_sev_RQ4 <- na.omit(train_data_sev_RQ4)
+test_data_sev_RQ4 <- na.omit(test_data_sev_RQ4)
+val_data_sev_RQ4 <- na.omit(val_data_sev_RQ4)
+
+# Select only the necessary columns
+train_data_sev_RQ4 <- train_data_sev_RQ4 %>%
+  dplyr::select(attack_size, Year.of.Breach)
+test_data_sev_RQ4 <- test_data_sev_RQ4 %>%
+  dplyr::select(attack_size, Year.of.Breach)
+val_data_sev_RQ4 <- val_data_sev_RQ4 %>%
+  dplyr::select(attack_size, Year.of.Breach)
+
+# Normalize the data
+normalize <- function(data) {
+  data <- as.data.frame(scale(data))
+  return(data)
+}
+
+train_data_sev_RQ4 <- normalize(train_data_sev_RQ4)
+test_data_sev_RQ4 <- normalize(test_data_sev_RQ4)
+val_data_sev_RQ4 <- normalize(val_data_sev_RQ4)
+
+# Function to preprocess data for LSTM
+preprocess_data <- function(data, timesteps) {
+  if (nrow(data) < timesteps) {
+    stop("Not enough data to create sequences. Number of rows should be greater than timesteps.")
+  }
+  
+  X <- array(0, dim = c(nrow(data) - timesteps + 1, timesteps, ncol(data) - 1))
+  y <- numeric(nrow(data) - timesteps + 1)
+  
+  for (i in 1:(nrow(data) - timesteps + 1)) {
+    X[i,,] <- as.matrix(data[i:(i + timesteps - 1), -ncol(data)])
+    y[i] <- data[i + timesteps - 1, ncol(data)]
+  }
+  
+  list(X = X, y = y)
+}
+
+# Define timesteps
+timesteps <- 10
+
+# Check if there is enough data for each dataset
+if (nrow(train_data_sev_RQ4) > timesteps & nrow(test_data_sev_RQ4) > timesteps & nrow(val_data_sev_RQ4) > timesteps) {
+  # Preprocess the datasets
+  train_processed <- preprocess_data(train_data_sev_RQ4, timesteps)
+  test_processed <- preprocess_data(test_data_sev_RQ4, timesteps)
+  val_processed <- preprocess_data(val_data_sev_RQ4, timesteps)
+  
+  # Define LSTM model
+  model <- keras_model_sequential() %>%
+    layer_lstm(units = 50, input_shape = c(timesteps, ncol(train_data_sev_RQ4) - 1)) %>%
+    layer_dense(units = 1)
+  
+  # Compile the model
+  model %>% compile(
+    loss = 'mse',
+    optimizer = 'adam'
+  )
+  
+  # Train the model
+  history <- model %>% fit(
+    train_processed$X, train_processed$y,
+    epochs = 50,
+    batch_size = 32,
+    validation_data = list(val_processed$X, val_processed$y)
+  )
+  
+  # Evaluate the model on test data
+  model %>% evaluate(test_processed$X, test_processed$y)
+  
+  # Predict and calculate performance metrics
+  predictions <- model %>% predict(test_processed$X)
+  actual <- test_processed$y
+  
+  # Calculate RMSE
+  rmse <- sqrt(mean((predictions - actual)^2))
+  print(paste("RMSE:", rmse))
+} else {
+  print("Not enough data to create sequences for LSTM model. Each dataset must have more rows than the number of timesteps.")
+}
+
+```
+
+
+
+Visualizations
+
+```{r}
+# Ensure the length of 'years' matches 'actual' and 'predictions'
+# Both 'actual' and 'predictions' should be of length nrow(test_data_sev_RQ4) - timesteps
+# Make sure to slice 'years' accordingly
+
+# 'actual' and 'predictions' lengths
+length_actual <- length(actual)
+length_predictions <- length(predictions)
+
+# Check if lengths of 'actual' and 'predictions' are the same
+if (length_actual != length_predictions) {
+  stop("Lengths of 'actual' and 'predictions' do not match.")
+}
+
+# Slice 'years' to match the length of 'actual' and 'predictions'
+years <- test_data_sev_RQ4$Year.of.Breach[(timesteps+1):(timesteps+length_actual)]
+
+# Create a data frame for plotting
+plot_data <- data.frame(
+  Year = years,
+  Actual = actual,
+  Predicted = predictions
+)
+
+# Plot the actual vs. predicted severities
+library(ggplot2)
+ggplot(plot_data, aes(x = Year)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(title = "Actual vs. Predicted Attack Severities Over Time",
+       x = "Year",
+       y = "Severity",
+       color = "Legend") +
+  theme_minimal()
+
+```
+
+
+2. Calculate and Plot Annual Averages
+
+```{r}
+# Calculate the average severity for each year
+average_severity <- plot_data %>%
+  group_by(Year) %>%
+  summarize(Avg_Actual = mean(Actual), Avg_Predicted = mean(Predicted))
+
+# Plot the average severities over the years
+ggplot(average_severity, aes(x = Year)) +
+  geom_line(aes(y = Avg_Actual, color = "Avg Actual")) +
+  geom_line(aes(y = Avg_Predicted, color = "Avg Predicted")) +
+  labs(title = "Average Attack Severity Over Time",
+       x = "Year",
+       y = "Average Severity",
+       color = "Legend") +
+  theme_minimal()
+
+```
+
+
+
+
+3. Analyze Trends
+
+```{r}
+# Perform linear regression on the average severities
+lm_actual <- lm(Avg_Actual ~ Year, data = average_severity)
+lm_predicted <- lm(Avg_Predicted ~ Year, data = average_severity)
+
+# Summarize the linear regression results
+summary(lm_actual)
+summary(lm_predicted)
+
+# Plot the trends with linear regression lines
+ggplot(average_severity, aes(x = Year)) +
+  geom_line(aes(y = Avg_Actual, color = "Avg Actual")) +
+  geom_smooth(aes(y = Avg_Actual), method = "lm", se = FALSE, color = "blue") +
+  geom_line(aes(y = Avg_Predicted, color = "Avg Predicted")) +
+  geom_smooth(aes(y = Avg_Predicted), method = "lm", se = FALSE, color = "red") +
+  labs(title = "Average Attack Severity Over Time with Trends",
+       x = "Year",
+       y = "Average Severity",
+       color = "Legend") +
+  theme_minimal()
+
+```
+
+Call:
+lm(formula = Avg_Actual ~ Year, data = average_severity)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.07714 -0.02728  0.01432  0.02776  0.05503 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)  
+(Intercept) 0.003497   0.016200   0.216   0.8353  
+Year        0.030421   0.013349   2.279   0.0567 .
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.04788 on 7 degrees of freedom
+  (1 observation deleted due to missingness)
+Multiple R-squared:  0.4259,	Adjusted R-squared:  0.3439 
+F-statistic: 5.193 on 1 and 7 DF,  p-value: 0.05673
+
+
+Call:
+lm(formula = Avg_Predicted ~ Year, data = average_severity)
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-0.0310832 -0.0083670 -0.0006806  0.0040586  0.0307067 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)
+(Intercept) 0.002931   0.006658   0.440    0.673
+Year        0.001555   0.005487   0.283    0.785
+
+Residual standard error: 0.01968 on 7 degrees of freedom
+  (1 observation deleted due to missingness)
+Multiple R-squared:  0.01134,	Adjusted R-squared:  -0.1299 
+F-statistic: 0.08028 on 1 and 7 DF,  p-value: 0.7851
+
+
+
+
+
+
+THE FOLLOWING MODELS ANSWER RESEARCH QUESTION 5-
+
+RQ5: How does the application of multinomial regression help in identifying distinct groups within a dataset based on their characteristics, and what insights can be derived from these groupings?
+
+H50
+The application of multinomial regression does not help in identifying distinct groups within a dataset based on their characteristics. 
+H5A
+The application of multinomial regression help in identifying distinct groups within a dataset based on their characteristics. 
+
+
+(This question focuses on the distinc groups in the dataset not just medical, so for this model the train_data split has to be used.) 
+
+```{r}
+str(train_data)
+```
+
+
+
+
+MULTINOMIAL REGRESSION
+
+```{r}
+# Load necessary libraries
+library(nnet)
+library(dplyr)
+library(yardstick)
+library(tidyr)
+library(pROC)
+library(rsample)
+
+# Check the distribution of Organization.Type in the original dataset
+print("Distribution of Organization.Type in the original dataset:")
+print(table(PRC2024_cleanV2$Organization.Type))
+
+# Perform stratified sampling to ensure balanced representation
+set.seed(123) # Ensure reproducibility
+split <- initial_split(PRC2024_cleanV2, prop = 0.7, strata = Organization.Type)
+train_data <- training(split)
+temp_data <- testing(split)
+
+# Split the temporary data into validation and test sets (1/3 validation and 2/3 test)
+val_test_split <- initial_split(temp_data, prop = 1/3, strata = Organization.Type)
+val_data <- training(val_test_split)
+test_data <- testing(val_test_split)
+
+# Check the distribution in training data
+print("Distribution of Organization.Type in the training dataset:")
+train_dist <- table(train_data$Organization.Type)
+print(train_dist)
+
+# Ensure there are at least two classes in Organization.Type
+if(length(unique(train_data$Organization.Type)) < 2) {
+  stop("The training data must have at least two distinct classes for Organization.Type.")
+}
+
+# Define create_attack_size function
+create_attack_size <- function(data) {
+  data %>%
+    mutate(Attack_Size = case_when(
+      Max.Records.Impacted >= 1 & Max.Records.Impacted <= 499 ~ "Below500",
+      Max.Records.Impacted >= 500 & Max.Records.Impacted <= 2000 ~ "Low",
+      Max.Records.Impacted >= 2001 & Max.Records.Impacted <= 4000 ~ "Med",
+      Max.Records.Impacted > 4000 ~ "High",
+      TRUE ~ "Unknown"
+    ))
+}
+
+# Apply create_attack_size to datasets
+train_data <- create_attack_size(train_data)
+val_data <- create_attack_size(val_data)
+test_data <- create_attack_size(test_data)
+
+# Convert 'Attack_Size' to factor
+train_data$Attack_Size <- factor(train_data$Attack_Size)
+val_data$Attack_Size <- factor(val_data$Attack_Size)
+test_data$Attack_Size <- factor(test_data$Attack_Size)
+
+# Convert categorical variables to factors
+categorical_vars <- c("Breach.Input", "Information.Types", "Encryption.Status", "State", "Organization.Type", "Attack_Size", "Year.of.Breach")
+
+# Ensure all specified columns exist in the datasets before conversion
+for (var in categorical_vars) {
+  if (!var %in% colnames(train_data)) {
+    stop(paste("Column", var, "is missing in the training dataset."))
+  }
+  if (!var %in% colnames(val_data)) {
+    stop(paste("Column", var, "is missing in the validation dataset."))
+  }
+  if (!var %in% colnames(test_data)) {
+    stop(paste("Column", var, "is missing in the test dataset."))
+  }
+}
+
+train_data[categorical_vars] <- lapply(train_data[categorical_vars], factor)
+val_data[categorical_vars] <- lapply(val_data[categorical_vars], factor)
+test_data[categorical_vars] <- lapply(test_data[categorical_vars], factor)
+
+# Ensure factor levels are consistent across datasets
+for (var in categorical_vars) {
+  levels(train_data[[var]]) <- union(levels(train_data[[var]]), levels(val_data[[var]]))
+  levels(train_data[[var]]) <- union(levels(train_data[[var]]), levels(test_data[[var]]))
+  levels(val_data[[var]]) <- levels(train_data[[var]])
+  levels(test_data[[var]]) <- levels(train_data[[var]])
+}
+
+# Fit the multinomial logistic regression model
+model <- multinom(
+  Organization.Type ~ Breach.Input + Information.Types + Encryption.Status + State + Max.Records.Impacted + Attack_Size + Year.of.Breach,
+  data = train_data
+)
+
+# Predict on validation data
+val_preds <- predict(model, val_data, type = "class")
+val_probs <- predict(model, val_data, type = "probs")
+
+# Predict on test data
+test_preds <- predict(model, test_data, type = "class")
+test_probs <- predict(model, test_data, type = "probs")
+
+# Ensure column names of predicted probabilities match levels of response variable
+levels_org_type <- levels(train_data$Organization.Type)
+colnames(val_probs) <- levels_org_type
+colnames(test_probs) <- levels_org_type
+
+# Declare preference for pROC::auc
+conflicts_prefer(pROC::auc)
+
+# Define a function to calculate evaluation metrics
+evaluate_model <- function(true_labels, predictions, probabilities) {
+  results <- list()
+  
+  # Accuracy
+  results$accuracy <- mean(predictions == true_labels)
+  
+  # Precision, Recall, F1 Score
+  precision <- precision_vec(true_labels, predictions, na_rm = TRUE)
+  recall <- recall_vec(true_labels, predictions, na_rm = TRUE)
+  f1 <- f_meas_vec(true_labels, predictions, na_rm = TRUE)
+  
+  results$precision <- precision
+  results$recall <- recall
+  results$f1 <- f1
+  
+  # ROC AUC
+  multiclass_roc_auc <- multiclass.roc(response = true_labels, predictor = as.matrix(probabilities))
+  results$roc_auc <- auc(multiclass_roc_auc)
+  
+  return(results)
+}
+
+# Evaluate on validation data
+val_metrics <- evaluate_model(val_data$Organization.Type, val_preds, val_probs)
+print(val_metrics)
+
+# Evaluate on test data
+test_metrics <- evaluate_model(test_data$Organization.Type, test_preds, test_probs)
+print(test_metrics)
+
+```
+
+Type 'citation("pROC")' for a citation.
+[1] "Distribution of Organization.Type in the original dataset:"
+
+ BSF  BSO  BSR  EDU  GOV  MED  NGO UNKN 
+4310 8668 3071 1579  958 5750  645  275 
+[1] "Distribution of Organization.Type in the training dataset:"
+
+ BSF  BSO  BSR  EDU  GOV  MED  NGO UNKN 
+3022 6059 2169 1111  678 4005  443  191 
+# weights:  840 (728 variable)
+initial  value 36760.367574 
+iter  10 value 36736.909583
+iter  20 value 31352.620250
+iter  30 value 28249.714949
+iter  40 value 26111.212247
+iter  50 value 25758.499691
+iter  50 value 25758.499691
+iter  60 value 24943.880187
+iter  70 value 24783.080467
+iter  80 value 24599.100817
+iter  90 value 24547.343980
+iter 100 value 24479.643916
+final  value 24479.643916 
+stopped after 100 iterations
+[conflicted] Will prefer pROC::auc over any other package.
+Warning: While computing multiclass `precision()`, some levels had no predicted events (i.e. `true_positive +
+false_positive = 0`).
+Precision is undefined in this case, and those levels will be removed from the averaged result.
+Note that the following number of true events actually occurred for each problematic event level:
+'NGO': 80, 'UNKN': 26
+Warning: While computing multiclass `precision()`, some levels had no predicted events (i.e. `true_positive +
+false_positive = 0`).
+Precision is undefined in this case, and those levels will be removed from the averaged result.
+Note that the following number of true events actually occurred for each problematic event level:
+'NGO': 80, 'UNKN': 26
+$accuracy
+[1] 0.3886688
+
+$precision
+[1] 0.3686575
+
+$recall
+[1] 0.1742544
+
+$f1
+[1] 0.1897169
+
+$roc_auc
+Multi-class area under the curve: 0.5925
+
+Warning: While computing multiclass `precision()`, some levels had no predicted events (i.e. `true_positive +
+false_positive = 0`).
+Precision is undefined in this case, and those levels will be removed from the averaged result.
+Note that the following number of true events actually occurred for each problematic event level:
+'NGO': 122, 'UNKN': 58
+Warning: While computing multiclass `precision()`, some levels had no predicted events (i.e. `true_positive +
+false_positive = 0`).
+Precision is undefined in this case, and those levels will be removed from the averaged result.
+Note that the following number of true events actually occurred for each problematic event level:
+'NGO': 122, 'UNKN': 58
+$accuracy
+[1] 0.306292
+
+$precision
+[1] 0.2464085
+
+$recall
+[1] 0.1729385
+
+$f1
+[1] 0.1974473
+
+$roc_auc
+Multi-class area under the curve: 0.6171
+
+
+results are in one note
+
+
+
+
+THE FOLLOWING MODELS ANSWER RESEARCH QUESTION 6- (Compare Models)
+
+RQ6: Which machine learning model produces a a more accurate and reliable predictive model, random forest, XGBoost or Ordinal logistic regression? 
+
+H60
+	There is no difference in predictive performance between random forest, XGBoost or Ordinal logistic regression.
+H6A
+	There is a difference in predictive performance between random forest, XGBoost or Ordinal logistic regression.
+	
+	(This question focuses on predictive abilities... databreaches characteristics that predict medical databreaches, so for this model the train_data2 split has to be used.)
+	
+
+
+
+Convert evertything to factor
+
+```{r}
+
+# Load necessary libraries
+library(tidyverse)
+
+# Function to convert all columns to factors
+convert_to_factors <- function(data) {
+  data %>%
+    mutate(across(everything(), as.factor))
+}
+
+# Apply the function to all datasets
+train_data2 <- convert_to_factors(train_data2)
+val_data2 <- convert_to_factors(val_data2)
+test_data2 <- convert_to_factors(test_data2)
+
+```
+
+
+
+All the models RF, XGBoost and Ordinal Logistic Regression
+
+
+
+
+```{r}
+# Load necessary libraries
+library(randomForest)
+library(xgboost)
+library(MASS) # For Ordinal Logistic Regression
+
+# Load datasets
+train_data2 <- read.csv("train_data2.csv")
+test_data2 <- read.csv("test_data2.csv")
+val_data2 <- read.csv("val_data2.csv")
+
+# Convert 'Breach.Input' to numeric for consistency
+train_data2$Breach.Input.Num <- as.numeric(factor(train_data2$Breach.Input)) - 1
+test_data2$Breach.Input.Num <- as.numeric(factor(test_data2$Breach.Input)) - 1
+val_data2$Breach.Input.Num <- as.numeric(factor(val_data2$Breach.Input)) - 1
+
+# Convert 'State' to numeric for XGBoost
+train_data2$State.Num <- as.numeric(factor(train_data2$State))
+test_data2$State.Num <- as.numeric(factor(test_data2$State))
+val_data2$State.Num <- as.numeric(factor(val_data2$State))
+
+# Since 'Organization.Type' has only one unique value, we can drop it
+train_data2 <- train_data2[, !(names(train_data2) %in% c("Organization.Type"))]
+test_data2 <- test_data2[, !(names(test_data2) %in% c("Organization.Type"))]
+val_data2 <- val_data2[, !(names(val_data2) %in% c("Organization.Type"))]
+
+# Prepare data for modeling
+train_matrix <- as.matrix(train_data2[, c("Max.Records.Impacted", "State.Num")])
+train_label <- train_data2$Breach.Input.Num
+
+test_matrix <- as.matrix(test_data2[, c("Max.Records.Impacted", "State.Num")])
+test_label <- test_data2$Breach.Input.Num
+
+val_matrix <- as.matrix(val_data2[, c("Max.Records.Impacted", "State.Num")])
+val_label <- val_data2$Breach.Input.Num
+
+# Random Forest model (RQ6)
+rf_model_RQ6 <- randomForest(x = train_matrix, y = train_label)
+rf_pred_RQ6 <- predict(rf_model_RQ6, newdata = val_matrix)
+rf_accuracy_RQ6 <- sum(rf_pred_RQ6 == val_label) / length(val_label)
+print(paste("Random Forest Accuracy (RQ6):", rf_accuracy_RQ6))
+
+# XGBoost model (RQ6)
+num_class <- length(unique(train_label))
+xgb_model_RQ6 <- xgboost(data = train_matrix, label = train_label, nrounds = 100, objective = "multi:softmax", num_class = num_class)
+xgb_pred_RQ6 <- predict(xgb_model_RQ6, newdata = val_matrix)
+xgb_accuracy_RQ6 <- sum(xgb_pred_RQ6 == val_label) / length(val_label)
+print(paste("XGBoost Accuracy (RQ6):", xgb_accuracy_RQ6))
+
+# Ordinal Logistic Regression model (RQ6)
+olr_model_RQ6 <- polr(as.factor(Breach.Input.Num) ~ Max.Records.Impacted + State.Num, data = train_data2, Hess = TRUE)
+olr_pred_RQ6 <- predict(olr_model_RQ6, newdata = val_data2)
+olr_accuracy_RQ6 <- sum(olr_pred_RQ6 == val_data2$Breach.Input.Num) / length(val_data2$Breach.Input.Num)
+print(paste("Ordinal Logistic Regression Accuracy (RQ6):", olr_accuracy_RQ6))
+
+# Compare accuracies
+accuracy_df_RQ6 <- data.frame(
+  Model = c("Random Forest (RQ6)", "XGBoost (RQ6)", "Ordinal Logistic Regression (RQ6)"),
+  Accuracy = c(rf_accuracy_RQ6, xgb_accuracy_RQ6, olr_accuracy_RQ6)
+)
+print(accuracy_df_RQ6)
+
+```
+
+[1] "Random Forest Accuracy (RQ6): 0"
+[1] "XGBoost Accuracy (RQ6): 0.375652173913043"
+[1] "Ordinal Logistic Regression Accuracy (RQ6): 0.405217391304348"
+
+
+Random Forest (RQ6)	0.0000000			
+XGBoost (RQ6)	0.3756522			
+Ordinal Logistic Regression (RQ6)	0.4052174			
+3 rows
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
