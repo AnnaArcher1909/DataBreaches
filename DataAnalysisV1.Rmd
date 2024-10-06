@@ -1,9 +1,21 @@
 ---
-title: "Data Analysis v1"
-html_document: default
+title: "Data Analysis v2"
+author: "Anna P. Archer"
+date: "2024"
+output:
   pdf_document: default
+  html_document: 
+  df_print: paged
+  html_notebook: default
 ---
 
+
+```{r}
+
+library(knitr)
+knitr::opts_chunk$set(error = TRUE)  # Set global option to continue knitting even if errors occur
+
+```
 
 
 Step 1 -- Loading packages and libraries
@@ -1100,6 +1112,9 @@ ggplot(breaches_per_year, aes(x = factor(Year.of.Breach), y = Total_Breaches)) +
 
 
 MACHINE LEARNING MODELS TO ANSWER RESEARCH QUESTIONS
+```{r}
+view(PRC2024_cleanV2)
+```
 
 
 
@@ -1242,9 +1257,9 @@ val_data_RQ1 <- val_data_RQ1 %>% mutate(attack_size = as.factor(severity_categor
 test_data_RQ1 <- test_data_RQ1 %>% mutate(attack_size = as.factor(severity_category))
 
 # Filter datasets to Organization.Type = "MED"
-train_data_RQ1 <- train_data_RQ1 %>% filter(Organization.Type == "MED")
-val_data_RQ1 <- val_data_RQ1 %>% filter(Organization.Type == "MED")
-test_data_RQ1 <- test_data_RQ1 %>% filter(Organization.Type == "MED")
+train_data_RQ1 <- train_data_RQ1 %>% dplyr::filter(Organization.Type == "MED")
+val_data_RQ1 <- val_data_RQ1 %>% dplyr::filter(Organization.Type == "MED")
+test_data_RQ1 <- test_data_RQ1 %>% dplyr::filter(Organization.Type == "MED")
 
 # Convert character variables to numerical values
 char_vars <- c("Breach.Input", "Information.Types", "Encryption.Status", "State")
@@ -1304,7 +1319,6 @@ evaluate_model <- function(true_labels, predictions) {
   )
 }
 
-
 rf_evaluation_RQ1 <- evaluate_model(test_labels, rf_predictions_numeric)
 xgb_evaluation_RQ1 <- evaluate_model(test_labels, xgb_predictions_numeric)
 
@@ -1314,6 +1328,7 @@ print(rf_evaluation_RQ1)
 
 print("XGBoost RQ1 Evaluation:")
 print(xgb_evaluation_RQ1)
+
 
 ```
 
@@ -1359,6 +1374,45 @@ ggplot(xgb_importance_df, aes(x = reorder(Feature, Gain), y = Gain)) +
 
 
 
+ROC AUC PLOT
+
+```{r}
+# Load necessary library for ROC and AUC
+library(pROC)
+
+# Compute ROC curve for Random Forest
+rf_roc_curve <- multiclass.roc(test_labels, rf_predictions_numeric)
+rf_auc <- auc(rf_roc_curve)
+
+# Compute ROC curve for XGBoost
+xgb_roc_curve <- multiclass.roc(test_labels, xgb_predictions_numeric)
+xgb_auc <- auc(xgb_roc_curve)
+
+# Plot the ROC curves together
+plot(roc(response = test_labels, predictor = as.numeric(rf_predictions_numeric)), 
+     col = "blue", main = "ROC Curve Comparison: Random Forest vs XGBoost", lwd = 2)
+plot(roc(response = test_labels, predictor = as.numeric(xgb_predictions_numeric)), 
+     add = TRUE, col = "red", lwd = 2)
+
+# Add a legend
+legend("bottomright", legend = c(paste("Random Forest AUC =", round(rf_auc, 3)), 
+                                 paste("XGBoost AUC =", round(xgb_auc, 3))), 
+       col = c("blue", "red"), lwd = 2)
+
+# Print the AUC values for comparison
+print(paste("Random Forest AUC:", round(rf_auc, 3)))
+print(paste("XGBoost AUC:", round(xgb_auc, 3)))
+
+# Determine which model performs better
+if (rf_auc > xgb_auc) {
+  print("Random Forest performs better.")
+} else if (xgb_auc > rf_auc) {
+  print("XGBoost performs better.")
+} else {
+  print("Both models perform equally.")
+}
+
+```
 
 
 
@@ -1511,10 +1565,10 @@ Model 1 - Multinational Regression, Multinational Naïve Bayes, Multiclass SVM, 
 
 (these models study all of the records not only medical records, therefore it should use the train_data_sev, test_data_sev and val_data_sev datasets)
 
-
+THIS CODE STOPPED WORKING
 
 ```{r}
-# Load necessary libraries
+# Load necessary libraries # THIS CODE STOPPED WORKING
 library(caret)
 library(e1071)  # For Naive Bayes and SVM
 library(randomForest)
@@ -1527,168 +1581,397 @@ train_dataRQ2 <- read.csv('train_data_sev.csv')
 val_dataRQ2 <- read.csv('val_data_sev.csv')
 test_dataRQ2 <- read.csv('test_data_sev.csv')
 
+# Check for missing values in training data
+cat("Checking for missing values in training data:\n")
+print(sapply(train_dataRQ2, function(x) sum(is.na(x))))
+
 # Ensure all variables are factors
 train_dataRQ2 <- train_dataRQ2 %>% mutate_if(is.character, as.factor)
 val_dataRQ2 <- val_dataRQ2 %>% mutate_if(is.character, as.factor)
 test_dataRQ2 <- test_dataRQ2 %>% mutate_if(is.character, as.factor)
 
+# Check the structure of the training data
+cat("Structure of training data:\n")
+str(train_dataRQ2)
+
 # Define the formula
 formula <- severity_category ~ normalized_records + attack_score + industry_score
 
-# Train models
-
-# Multinomial Regression
+# Check the training of a Random Forest model
 set.seed(123)
-multinom_model <- tryCatch({
-  train(formula, data = train_dataRQ2, method = 'multinom', trControl = trainControl(method = 'cv'))
-}, error = function(e) {
-  print(e)
-  NULL
-})
-
-# Multinomial Naïve Bayes
-set.seed(123)
-nb_model <- tryCatch({
-  train(formula, data = train_dataRQ2, method = 'naive_bayes', trControl = trainControl(method = 'cv'))
-}, error = function(e) {
-  print(e)
-  NULL
-})
-
-# Multiclass SVM
-set.seed(123)
-svm_model <- tryCatch({
-  train(formula, data = train_dataRQ2, method = 'svmRadial', trControl = trainControl(method = 'cv'))
-}, error = function(e) {
-  print(e)
-  NULL
-})
-
-# Random Forest
-set.seed(123)
-rf_model <- tryCatch({
+rf_model_test <- tryCatch({
   train(formula, data = train_dataRQ2, method = 'rf', trControl = trainControl(method = 'cv'))
 }, error = function(e) {
-  print(e)
+  print("Random Forest model failed to train.")
   NULL
 })
 
-# Check if models are successfully trained
+# Check the model structure to see if it was successfully trained
+cat("Random Forest model structure:\n")
+print(rf_model_test)
+
+# Correct the trainControl() configuration for cross-validation
+control <- trainControl(method = "cv", number = 5)
+
+# Retry training a model with corrected trainControl
+set.seed(123)
+rf_model_test_cv <- tryCatch({
+  train(formula, data = train_dataRQ2, method = 'rf', trControl = control)
+}, error = function(e) {
+  print("Random Forest model with CV failed to train.")
+  NULL
+})
+
+# Check the model structure to see if it was successfully trained
+cat("Random Forest model with CV structure:\n")
+print(rf_model_test_cv)
+
+# If models successfully train, proceed with the rest of the models
+set.seed(123)
+multinom_model <- tryCatch({
+  train(formula, data = train_dataRQ2, method = 'multinom', trControl = control)
+}, error = function(e) {
+  print("Multinomial Regression model failed to train.")
+  NULL
+})
+
+set.seed(123)
+nb_model <- tryCatch({
+  train(formula, data = train_dataRQ2, method = 'naive_bayes', trControl = control)
+}, error = function(e) {
+  print("Naïve Bayes model failed to train.")
+  NULL
+})
+
+set.seed(123)
+svm_model <- tryCatch({
+  train(formula, data = train_dataRQ2, method = 'svmRadial', trControl = control)
+}, error = function(e) {
+  print("SVM model failed to train.")
+  NULL
+})
+
+# Collect all models into a list
 models <- list(multinom_model = multinom_model, nb_model = nb_model, svm_model = svm_model, rf_model = rf_model)
 model_names <- names(models)
+
+# Check for NULL models and print a message for each failed model
+for (i in seq_along(models)) {
+  if (is.null(models[[i]])) {
+    cat(model_names[i], "model is NULL and will be skipped.\n")
+  }
+}
 
 # Filter out any NULL models to prevent errors in prediction
 models <- models[!sapply(models, is.null)]
 model_names <- names(models)
 
-if (length(models) == 0) {
-  stop("No models were successfully trained.")
+# If models train successfully, continue with evaluation and ensemble
+if (length(models) > 0) {
+  cat("Models successfully trained and ready for evaluation.\n")
+  # Proceed with evaluation, predictions, and ensemble methods
+} else {
+  cat("No models were successfully trained. Cannot proceed.\n")
 }
-
-# Evaluation function to include F1 score, accuracy, precision, recall, and ROC AUC
-evaluate_model <- function(model, val_dataRQ2) {
-  pred <- predict(model, newdata = val_dataRQ2)
-  
-  # Confusion matrix for accuracy, precision, recall, F1 score
-  cm <- confusionMatrix(pred, val_dataRQ2$severity_category)
-  
-  # Extracting metrics
-  accuracy <- cm$overall['Accuracy']
-  precision <- cm$byClass['Precision']
-  recall <- cm$byClass['Recall']
-  f1_score <- cm$byClass['F1']
-  
-  # ROC AUC for multiclass
-  roc_curve <- multiclass.roc(val_dataRQ2$severity_category, as.numeric(pred))
-  auc_value <- auc(roc_curve)
-  
-  # Return all metrics as a list
-  return(list(
-    accuracy = accuracy,
-    precision = precision,
-    recall = recall,
-    f1_score = f1_score,
-    roc_auc = auc_value
-  ))
-}
-
-# Evaluate all models and print their performance
-performance_metrics <- lapply(models, evaluate_model, val_dataRQ2 = val_dataRQ2)
-names(performance_metrics) <- model_names
-
-# Print performance metrics for each model
-for (model_name in model_names) {
-  cat("Performance metrics for", model_name, ":\n")
-  print(performance_metrics[[model_name]])
-  cat("\n")
-}
-
-# Select the best three models based on accuracy
-best_models <- names(sort(sapply(performance_metrics, function(x) x$accuracy), decreasing = TRUE)[1:3])
-
-# Create an ensemble of the best three models
-ensemble_predict <- function(models, val_dataRQ2) {
-  predictions <- sapply(models, function(model) as.character(predict(model, newdata = val_dataRQ2)))
-  predictions <- as.data.frame(predictions)
-  colnames(predictions) <- best_models
-  ensemble_pred <- apply(predictions, 1, function(x) names(which.max(table(x))))
-  factor(ensemble_pred, levels = levels(val_dataRQ2$severity_category))
-}
-
-# Get the best model objects
-best_model_objects <- models[best_models]
-
-# Predict and evaluate ensemble on validation data
-ensemble_val_pred <- ensemble_predict(best_model_objects, val_dataRQ2)
-ensemble_val_cm <- confusionMatrix(ensemble_val_pred, val_dataRQ2$severity_category)
-
-# Calculate metrics for ensemble on validation data
-ensemble_val_accuracy <- ensemble_val_cm$overall['Accuracy']
-ensemble_val_precision <- ensemble_val_cm$byClass['Precision']
-ensemble_val_recall <- ensemble_val_cm$byClass['Recall']
-ensemble_val_f1 <- ensemble_val_cm$byClass['F1']
-ensemble_val_roc_curve <- multiclass.roc(val_dataRQ2$severity_category, as.numeric(ensemble_val_pred))
-ensemble_val_roc_auc <- auc(ensemble_val_roc_curve)
-
-# Print ensemble performance on validation data
-cat("Ensemble Validation Performance:\n")
-cat("Accuracy:", ensemble_val_accuracy, "\n")
-cat("Precision:", ensemble_val_precision, "\n")
-cat("Recall:", ensemble_val_recall, "\n")
-cat("F1 Score:", ensemble_val_f1, "\n")
-cat("ROC AUC:", ensemble_val_roc_auc, "\n\n")
-
-# Predict and evaluate ensemble on test data
-ensemble_test_pred <- ensemble_predict(best_model_objects, test_dataRQ2)
-ensemble_test_cm <- confusionMatrix(ensemble_test_pred, test_dataRQ2$severity_category)
-
-# Calculate metrics for ensemble on test data
-ensemble_test_accuracy <- ensemble_test_cm$overall['Accuracy']
-ensemble_test_precision <- ensemble_test_cm$byClass['Precision']
-ensemble_test_recall <- ensemble_test_cm$byClass['Recall']
-ensemble_test_f1 <- ensemble_test_cm$byClass['F1']
-ensemble_test_roc_curve <- multiclass.roc(test_dataRQ2$severity_category, as.numeric(ensemble_test_pred))
-ensemble_test_roc_auc <- auc(ensemble_test_roc_curve)
-
-# Print ensemble performance on test data
-cat("Ensemble Test Performance:\n")
-cat("Accuracy:", ensemble_test_accuracy, "\n")
-cat("Precision:", ensemble_test_precision, "\n")
-cat("Recall:", ensemble_test_recall, "\n")
-cat("F1 Score:", ensemble_test_f1, "\n")
-cat("ROC AUC:", ensemble_test_roc_auc, "\n")
-
-
 ```
-multinom_model       nb_model      svm_model       rf_model 
-     0.6067327      0.9801980      0.5833663      0.9988119 
- Accuracy 
-0.9837624 
- Accuracy 
-0.9853523 
+
+Code to Separate Each Model Block
+
+svm
+
+```{r}
+# Run SVM model and get metrics
+evaluate_svm <- function() {
+  set.seed(123)
+  svm_model <- tryCatch({
+    train(formula, data = train_dataRQ2, method = 'svmRadial', trControl = trainControl(method = 'cv'))
+  }, error = function(e) {
+    print("SVM model failed to train.")
+    NULL
+  })
+  
+  # Check if SVM model is trained
+  if (!is.null(svm_model)) {
+    # Get metrics for SVM model
+    metrics <- evaluate_model(svm_model, val_dataRQ2)
+    cat("SVM Model Metrics:\n")
+    print(metrics)
+    return(list(model = svm_model, metrics = metrics))
+  } else {
+    return(NULL)
+  }
+}
+
+svm_results <- evaluate_svm()
+```
+
+
+
+RF
+
+```{r}
+# Run Random Forest model and get metrics
+evaluate_rf <- function() {
+  set.seed(123)
+  rf_model <- tryCatch({
+    train(formula, data = train_dataRQ2, method = 'rf', trControl = trainControl(method = 'cv'))
+  }, error = function(e) {
+    print("Random Forest model failed to train.")
+    NULL
+  })
+  
+  # Check if Random Forest model is trained
+  if (!is.null(rf_model)) {
+    # Get metrics for RF model
+    metrics <- evaluate_model(rf_model, val_dataRQ2)
+    cat("Random Forest Model Metrics:\n")
+    print(metrics)
+    return(list(model = rf_model, metrics = metrics))
+  } else {
+    return(NULL)
+  }
+}
+
+rf_results <- evaluate_rf()
+```
+
+
+
+Naive Bayes Model and Get Metrics
+
+```{r}
+# Run Naive Bayes model and get metrics
+evaluate_nb <- function() {
+  set.seed(123)
+  nb_model <- tryCatch({
+    train(formula, data = train_dataRQ2, method = 'naive_bayes', trControl = trainControl(method = 'cv'))
+  }, error = function(e) {
+    print("Naive Bayes model failed to train.")
+    NULL
+  })
+  
+  # Check if Naive Bayes model is trained
+  if (!is.null(nb_model)) {
+    # Get metrics for NB model
+    metrics <- evaluate_model(nb_model, val_dataRQ2)
+    cat("Naive Bayes Model Metrics:\n")
+    print(metrics)
+    return(list(model = nb_model, metrics = metrics))
+  } else {
+    return(NULL)
+  }
+}
+
+nb_results <- evaluate_nb()
+```
+
+
+Multinomial Regression Model and Get Metrics
+
+```{r}
+# Run Multinomial Regression model and get metrics
+evaluate_multinom <- function() {
+  set.seed(123)
+  multinom_model <- tryCatch({
+    train(formula, data = train_dataRQ2, method = 'multinom', trControl = trainControl(method = 'cv'))
+  }, error = function(e) {
+    print("Multinomial Regression model failed to train.")
+    NULL
+  })
+  
+  # Check if Multinomial Regression model is trained
+  if (!is.null(multinom_model)) {
+    # Get metrics for Multinomial model
+    metrics <- evaluate_model(multinom_model, val_dataRQ2)
+    cat("Multinomial Regression Model Metrics:\n")
+    print(metrics)
+    return(list(model = multinom_model, metrics = metrics))
+  } else {
+    return(NULL)
+  }
+}
+
+multinom_results <- evaluate_multinom()
+```
+
+
+
+
+
+
+
+Run Ensemble of Best Three Models
+
+```{r}
+# Manually input model accuracies (these can be based on cross-validation or validation set results)
+model_accuracies <- c(svm = 0.5833663, rf = 0.9988119, nb = 0.980198, multinom = 0.6067327)
+
+# Normalize accuracies to use as weights
+total_accuracy <- sum(model_accuracies)
+model_weights <- model_accuracies / total_accuracy  # Normalize the weights
+
+# List of models to use in the ensemble (replace these with your trained models)
+models <- list(
+  svm = svm_model,     # Replace with your actual SVM model object
+  rf = rf_model,       # Replace with your actual Random Forest model object
+  nb = nb_model,       # Replace with your actual Naive Bayes model object
+  multinom = multinom_model  # Replace with your actual Multinomial Regression model object
+)
+
+# Function to check if a model supports probability predictions
+supports_prob <- function(model) {
+  tryCatch({
+    predict(model, newdata = val_dataRQ2, type = "prob")
+    TRUE
+  }, error = function(e) {
+    FALSE
+  })
+}
+
+# Ensure that all models predict the same set of classes
+align_probabilities <- function(pred, model_name, all_classes) {
+  # Check if any classes are missing in the model's predictions
+  if (!all(colnames(pred) %in% all_classes)) {
+    missing_classes <- setdiff(all_classes, colnames(pred))
+    
+    # Add columns for missing classes with zero probabilities
+    for (cls in missing_classes) {
+      pred[, cls] <- 0
+    }
+  }
+  
+  # Ensure the columns are ordered the same as `all_classes`
+  pred <- pred[, all_classes]
+  
+  return(pred)
+}
+
+# Weighted voting ensemble function using the entered accuracies
+ensemble_weighted_voting <- function(models, weights, val_dataRQ2) {
+  # Get all class levels from the validation data
+  all_classes <- levels(val_dataRQ2$severity_category)
+  
+  class_predictions <- list()  # For models that give class labels
+  prob_predictions <- list()   # For models that give probabilities
+  
+  for (model_name in names(models)) {
+    model <- models[[model_name]]
+    if (!is.null(model)) {
+      pred <- tryCatch({
+        # Check if the model supports probabilities
+        if (supports_prob(model)) {
+          cat("Model", model_name, "supports probabilities, using type = 'prob'\n")
+          prob_pred <- predict(model, newdata = val_dataRQ2, type = "prob")
+          
+          # Check if the model returned NAs (failed prediction)
+          if (any(is.na(prob_pred))) {
+            cat("Warning: Probability predictions for model", model_name, "contain NAs, skipping.\n")
+            NULL
+          } else {
+            align_probabilities(as.data.frame(prob_pred), model_name, all_classes)
+          }
+        } else {
+          cat("Model", model_name, "does not support probabilities, using hard predictions\n")
+          as.factor(predict(model, newdata = val_dataRQ2))  # Hard class predictions
+        }
+      }, error = function(e) {
+        cat("Prediction failed for model:", model_name, "\n")
+        return(NULL)
+      })
+      
+      if (!is.null(pred)) {
+        if (is.data.frame(pred)) {
+          prob_predictions[[model_name]] <- pred * weights[model_name]  # Apply weights to probabilities
+        } else {
+          class_predictions[[model_name]] <- pred  # Store class labels directly
+        }
+      }
+    }
+  }
+  
+  # Handle probability predictions
+  if (length(prob_predictions) > 0) {
+    prob_predictions_combined <- Reduce("+", prob_predictions)  # Sum weighted probabilities
+    
+    # Choose class with highest probability for each instance
+    prob_ensemble_pred <- apply(prob_predictions_combined, 1, function(row) which.max(row))
+    prob_ensemble_pred <- factor(prob_ensemble_pred, levels = levels(val_dataRQ2$severity_category))
+  } else {
+    prob_ensemble_pred <- NULL
+  }
+  
+  # Handle class predictions (weighted voting)
+  if (length(class_predictions) > 0) {
+    class_predictions_df <- do.call(cbind, class_predictions)
+    
+    # Apply weights to class labels and do majority voting
+    class_ensemble_pred <- apply(class_predictions_df, 1, function(row) {
+      weighted_votes <- table(row)  # Tally the votes for each class
+      max_class <- names(which.max(weighted_votes))  # Select the class with the most votes
+      return(max_class)
+    })
+    
+    class_ensemble_pred <- factor(class_ensemble_pred, levels = levels(val_dataRQ2$severity_category))
+  } else {
+    class_ensemble_pred <- NULL
+  }
+  
+  # Combine results from both probability-based and class-based models
+  if (!is.null(prob_ensemble_pred) && !is.null(class_ensemble_pred)) {
+    # Use probability-based predictions if available, otherwise fallback to class-based
+    final_ensemble_pred <- ifelse(!is.na(prob_ensemble_pred), prob_ensemble_pred, class_ensemble_pred)
+  } else if (!is.null(prob_ensemble_pred)) {
+    final_ensemble_pred <- prob_ensemble_pred
+  } else {
+    final_ensemble_pred <- class_ensemble_pred
+  }
+  
+  return(final_ensemble_pred)
+}
+
+# Run the ensemble using the manually entered accuracies
+ensemble_pred <- ensemble_weighted_voting(models, model_weights, val_dataRQ2)
+
+# Evaluate the ensemble
+if (!is.null(ensemble_pred) && length(ensemble_pred) > 0) {
+  ensemble_val_cm <- confusionMatrix(ensemble_pred, val_dataRQ2$severity_category)
+  
+  # Calculate metrics for ensemble on validation data
+  ensemble_val_accuracy <- ensemble_val_cm$overall['Accuracy']
+  ensemble_val_precision <- ensemble_val_cm$byClass['Precision']
+  ensemble_val_recall <- ensemble_val_cm$byClass['Recall']
+  ensemble_val_f1 <- ensemble_val_cm$byClass['F1']
+  
+  # Print ensemble performance
+  cat("Ensemble Validation Performance:\n")
+  cat("Accuracy:", ensemble_val_accuracy, "\n")
+  cat("Precision:", ensemble_val_precision, "\n")
+  cat("Recall:", ensemble_val_recall, "\n")
+  cat("F1 Score:", ensemble_val_f1, "\n")
+}
+```
+
+
+Run Emsemble and evaluate
+
+```{r}
+# Evaluate the ensemble
+if (!is.null(ensemble_pred) && length(ensemble_pred) > 0) {
+  ensemble_val_cm <- confusionMatrix(ensemble_pred, val_dataRQ2$severity_category)
+  
+  # Print evaluation metrics for the ensemble
+  print(ensemble_val_cm)
+}
+```
+
+
+
+
 
 
 To examine feature importance in the RF:
+
+
 
 ```{r}
 # Feature importance for the Random Forest model
@@ -1906,17 +2189,15 @@ xgb_model_rq2 <- xgb.train(
 set.seed(123)
 rf_model_rq2 <- train(formula, data = train_dataRQ2, method = 'rf', trControl = trainControl(method = 'cv'))
 
-# Custom prediction functions with debugging
+# Custom prediction functions
 
 predict_multinom_rq2 <- function(model, val_data) {
   pred <- predict(model, newdata = val_data)
-  print(paste("Multinomial Regression - Length of predictions:", length(pred)))
   return(pred)
 }
 
 predict_perc_rq2 <- function(model, val_data) {
   pred <- predict(model, newdata = val_data)
-  print(paste("Perceptron - Length of predictions:", length(pred)))
   return(pred)
 }
 
@@ -1924,72 +2205,53 @@ predict_xgb_rq2 <- function(model, val_data) {
   pred <- predict(model, as.matrix(dplyr::select(val_data, normalized_records, attack_score, industry_score)))
   pred <- max.col(matrix(pred, ncol = length(unique(train_dataRQ2$severity_category)))) - 1
   pred <- factor(pred, levels = 0:(length(unique(train_dataRQ2$severity_category)) - 1), labels = levels(train_dataRQ2$severity_category))
-  print(paste("XGBoost - Length of predictions:", length(pred)))
   return(pred)
 }
 
 predict_rf_rq2 <- function(model, val_data) {
   pred <- predict(model, newdata = val_data)
-  print(paste("Random Forest - Length of predictions:", length(pred)))
   return(pred)
 }
 
-# Modify the evaluation function to include accuracy, precision, recall, F1, and ROC AUC
-evaluate_model_rq2 <- function(predict_func, model, val_data) {
+# Modify the evaluation function to include accuracy, precision, recall, F1 score, and confusion matrix printing
+evaluate_model_rq2 <- function(predict_func, model, val_data, model_name) {
   pred <- predict_func(model, val_data)
   pred <- factor(pred, levels = levels(val_data$severity_category)) 
   
-  # Confusion matrix and derived metrics
+  # Confusion matrix
   cm <- confusionMatrix(pred, val_data$severity_category)
+  
+  # Metrics calculation
   accuracy <- cm$overall['Accuracy']
   precision <- cm$byClass['Precision']
   recall <- cm$byClass['Recall']
-  f1 <- F1_Score(y_true = val_data$severity_category, y_pred = pred)
+  f1 <- F1_Score(y_true = val_data$severity_category, y_pred = pred, positive = "1")
   
-  # ROC AUC calculation for binary classification
-  roc_auc <- NA
-  if (length(unique(val_data$severity_category)) == 2) {
-    roc_auc <- roc(as.numeric(val_data$severity_category), as.numeric(pred))$auc
-  }
+  # Print confusion matrix and metrics
+  cat(paste(model_name, "Confusion Matrix:\n"))
+  print(cm$table)
+  cat(paste(model_name, "Metrics:\n"))
+  cat("Accuracy:", accuracy, "\n")
+  cat("Precision:", precision, "\n")
+  cat("Recall:", recall, "\n")
+  cat("F1 Score:", f1, "\n\n")
   
-  return(c(Accuracy = accuracy, Precision = precision, Recall = recall, F1 = f1, ROC_AUC = roc_auc))
+  return(list(confusion_matrix = cm$table, accuracy = accuracy, precision = precision, recall = recall, f1 = f1))
 }
 
-# Evaluate all models for multiple metrics
-metrics_rq2 <- sapply(seq_along(models_rq2), function(i) evaluate_model_rq2(predict_model_rq2[[i]], models_rq2[[i]], val_dataRQ2))
+# Evaluate all models and print their confusion matrices and metrics
+multinom_metrics <- evaluate_model_rq2(predict_multinom_rq2, multinom_model_rq2, val_dataRQ2, "Multinomial Regression")
+perc_metrics <- evaluate_model_rq2(predict_perc_rq2, perc_model_rq2, val_dataRQ2, "Perceptron")
+xgb_metrics <- evaluate_model_rq2(predict_xgb_rq2, xgb_model_rq2, val_dataRQ2, "XGBoost")
+rf_metrics <- evaluate_model_rq2(predict_rf_rq2, rf_model_rq2, val_dataRQ2, "Random Forest")
 
-# Convert to data frame for easier reading
-metrics_df_rq2 <- as.data.frame(metrics_rq2, row.names = c("Accuracy", "Precision", "Recall", "F1", "ROC_AUC"))
-colnames(metrics_df_rq2) <- model_names_rq2
-print(metrics_df_rq2)
-
-# Select the best three models based on accuracy
-accuracy_values <- as.numeric(metrics_df_rq2["Accuracy", ])
-best_model_indices <- order(accuracy_values, decreasing = TRUE)[1:3]
-best_models_rq2 <- model_names_rq2[best_model_indices]
-
-# Get the corresponding prediction functions for the top three models
-best_predict_funcs_rq2 <- predict_model_rq2[best_model_indices]
-
-# Check for missing values in the validation data
-print("Checking for missing values in validation data")
-print(sum(is.na(val_dataRQ2)))
-
-# Check lengths of predictions for each model before combining them in the ensemble
-for (i in seq_along(best_model_objects_rq2)) {
-  pred_length <- length(best_predict_funcs_rq2[[i]](best_model_objects_rq2[[i]], val_dataRQ2))
-  print(paste("Length of predictions for model", best_models_rq2[i], ":", pred_length))
-}
-
-# Updated ensemble prediction function with debugging
+# Ensemble prediction function
 ensemble_predict_rq2 <- function(models, predict_funcs, val_data) {
   predictions <- sapply(seq_along(models), function(i) {
     pred <- as.character(predict_funcs[[i]](models[[i]], val_data))
-    print(paste("Model", i, "prediction length:", length(pred)))  # Debugging line
     return(pred)
   })
   predictions <- as.data.frame(predictions)
-  colnames(predictions) <- best_models_rq2
   
   # Apply the majority vote ensemble by using max count for each row
   ensemble_pred <- apply(predictions, 1, function(x) {
@@ -2004,23 +2266,28 @@ ensemble_predict_rq2 <- function(models, predict_funcs, val_data) {
   return(ensemble_pred)
 }
 
-# Get the best model objects
-best_model_objects_rq2 <- models_rq2[match(best_models_rq2, model_names_rq2)]
+# Select the best models based on accuracy
+best_models_rq2 <- list(multinom_model_rq2, rf_model_rq2, xgb_model_rq2)
+best_predict_funcs_rq2 <- list(predict_multinom_rq2, predict_rf_rq2, predict_xgb_rq2)
 
 # Generate ensemble predictions
-ensemble_val_pred_rq2 <- ensemble_predict_rq2(best_model_objects_rq2, best_predict_funcs_rq2, val_dataRQ2)
+ensemble_val_pred_rq2 <- ensemble_predict_rq2(best_models_rq2, best_predict_funcs_rq2, val_dataRQ2)
 
-# Debugging: Check the lengths of predictions and actual values
-print(paste("Length of ensemble predictions:", length(ensemble_val_pred_rq2)))
-print(paste("Length of actual values:", length(val_dataRQ2$severity_category)))
+# Print ensemble confusion matrix and calculate metrics
+ensemble_cm <- confusionMatrix(ensemble_val_pred_rq2, val_dataRQ2$severity_category)
+ensemble_accuracy <- ensemble_cm$overall['Accuracy']
+ensemble_precision <- ensemble_cm$byClass['Precision']
+ensemble_recall <- ensemble_cm$byClass['Recall']
+ensemble_f1 <- F1_Score(y_true = val_dataRQ2$severity_category, y_pred = ensemble_val_pred_rq2, positive = "1")
 
-# Ensure lengths are the same before confusion matrix
-if (length(ensemble_val_pred_rq2) == length(val_dataRQ2$severity_category)) {
-  ensemble_val_accuracy_rq2 <- confusionMatrix(ensemble_val_pred_rq2, val_dataRQ2$severity_category)$overall['Accuracy']
-  print(ensemble_val_accuracy_rq2)
-} else {
-  print("Error: Lengths of predictions and actual values do not match!")
-}
+cat("Ensemble Confusion Matrix:\n")
+print(ensemble_cm$table)
+cat("Ensemble Metrics:\n")
+cat("Accuracy:", ensemble_accuracy, "\n")
+cat("Precision:", ensemble_precision, "\n")
+cat("Recall:", ensemble_recall, "\n")
+cat("F1 Score:", ensemble_f1, "\n\n")
+
 
 
 ```
@@ -2107,6 +2374,12 @@ normalized_records	100.000000
 industry_score	2.968793			
 attack_score	0.000000			
 3 rows
+
+
+
+
+
+
 
 
 
@@ -2295,6 +2568,97 @@ print(paste("Test Accuracy:", test_accuracy))
 ```
 
 
+Relationship between the variables
+
+```{r}
+# Simplified facet grid focusing only on Information Types
+ggplot(summary_data, aes(x = Organization.Type, y = count, fill = Breach.Input)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~ Information.Types, scales = "free_x") +
+  theme_minimal() +
+  labs(
+    title = "Relationship Between Organization Type and Breach Input Across Information Types",
+    x = "Organization Type",
+    y = "Count",
+    fill = "Breach Input"
+  ) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+```
+
+
+
+Aggregated data plot
+
+```{r}
+# Aggregate data by Organization Type and Breach Input
+aggregated_data <- summary_data %>%
+  group_by(Organization.Type, Breach.Input) %>%
+  summarise(total_count = sum(count))
+
+# Bar plot of aggregated data
+ggplot(aggregated_data, aes(x = Organization.Type, y = total_count, fill = Breach.Input)) +
+  geom_bar(stat = "identity", position = "fill") +
+  theme_minimal() +
+  labs(
+    title = "Proportion of Breach Input Types by Organization Type",
+    x = "Organization Type",
+    y = "Proportion",
+    fill = "Breach Input"
+  ) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+```
+
+
+Highlighting key variables
+
+```{r}
+# Plot for State and Breach Input
+state_data <- summary_data %>%
+  group_by(State, Breach.Input) %>%
+  summarise(count = sum(count))
+
+ggplot(state_data, aes(x = State, y = count, fill = Breach.Input)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(
+    title = "Relationship Between State and Breach Input",
+    x = "State",
+    y = "Count",
+    fill = "Breach Input"
+  ) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+```
+
+
+Same plot without outliers
+
+
+```{r}
+# Prepare data by filtering extreme values for clearer visualization
+state_data <- summary_data %>%
+  group_by(State, Breach.Input) %>%
+  summarise(count = sum(count), .groups = "drop") %>%
+  filter(count > quantile(count, 0.05) & count < quantile(count, 0.95))  # Filtering out the top and bottom 5%
+# Bar plot for State and Breach Input excluding outliers
+ggplot(state_data, aes(x = State, y = count, fill = Breach.Input)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(
+    title = "Relationship Between State and Breach Input (Excluding Outliers)",
+    x = "State",
+    y = "Count",
+    fill = "Breach Input"
+  ) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  theme(legend.position = "bottom")
+
+```
+
+
 Feature of importance plot
 
 
@@ -2408,6 +2772,8 @@ print(paste("Precision: ", val_precision))
 print(paste("Recall: ", val_recall))
 print(paste("F1 Score: ", val_f1))
 print(paste("AUC-ROC: ", val_auc))
+print("Validation Confusion Matrix:")
+print(val_confusion$table)
 
 # Predict on test data
 test_pred <- predict(rf_model, data = test_data)$predictions
@@ -2442,21 +2808,42 @@ print(paste("Precision: ", test_precision))
 print(paste("Recall: ", test_recall))
 print(paste("F1 Score: ", test_f1))
 print(paste("AUC-ROC: ", test_auc))
-
+print("Test Confusion Matrix:")
+print(test_confusion$table)
 ```
 
 [1] "Validation Metrics:"
-[1] "Accuracy:  0.420760697305864"
+[1] "Accuracy:  0.712079207920792"
 [1] "Precision:  NaN"
-[1] "Recall:  0.152901256362599"
+[1] "Recall:  0.243302576439297"
 [1] "F1 Score:  NA"
-[1] "AUC-ROC:  0.595415868629892"
+[1] "AUC-ROC:  0.741142402564668"
+[1] "Validation Confusion Matrix:"
+          Reference
+Prediction CARD DISC HACK INSD PHYS PORT STAT
+      CARD    0    0    0    0    0    0    0
+      DISC    0    0    0    0    0    0    0
+      HACK    5  156  808   85   42   89    9
+      INSD   11   52  225  990   44    7    2
+      PHYS    0    0    0    0    0    0    0
+      PORT    0    0    0    0    0    0    0
+      STAT    0    0    0    0    0    0    0
 [1] "Test Metrics:"
-[1] "Accuracy:  0.413731697665216"
+[1] "Accuracy:  0.701504354711006"
 [1] "Precision:  NaN"
-[1] "Recall:  0.149596747806152"
+[1] "Recall:  0.243934558016446"
 [1] "F1 Score:  NA"
-[1] "AUC-ROC:  0.628303603635792"
+[1] "AUC-ROC:  0.742307690451185"
+[1] "Test Confusion Matrix:"
+          Reference
+Prediction CARD DISC HACK INSD PHYS PORT STAT
+      CARD    0    0    0    0    0    0    0
+      DISC    0    0    0    0    0    0    0
+      HACK   13  332 1562  183   91  179   41
+      INSD   33  120  409 1982   90   12    4
+      PHYS    0    0    0    0    0    0    0
+      PORT    0    0    0    1    0    0    0
+      STAT    0    0    0    0    0    0    0
 
 This results are explained in the one note file
 
@@ -2497,6 +2884,49 @@ ggplot(importance_df, aes(x = reorder(Feature, Importance), y = Importance)) +
 
 
 This plot is explain in the one note file.
+
+
+Confusion matrix heatmap
+
+
+```{r}
+library(ggplot2)
+ggplot(data = as.data.frame(table(Actual = val_data$Breach.Input, Predicted = val_pred_class)),
+       aes(x = Actual, y = Predicted, fill = Freq)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  theme_minimal() +
+  labs(title = "Confusion Matrix Heatmap", x = "Actual Class", y = "Predicted Class")
+```
+
+
+Roc Curve
+
+```{r}
+library(pROC)
+
+# Assuming 'val_data$Breach.Input' is the actual classes and 'val_pred' contains predicted probabilities
+roc_data <- lapply(levels(val_data$Breach.Input), function(class) {
+  roc(response = as.numeric(val_data$Breach.Input == class), 
+      predictor = val_pred[,class])
+})
+
+# Calculate AUC for each ROC curve
+auc_values <- sapply(roc_data, auc)
+
+# Print the AUC values for comparison
+print(auc_values)
+
+# Plotting each ROC curve
+plot(roc_data[[1]], main = "ROC Curves for Each Class", col = 1)
+for(i in 2:length(roc_data)) {
+  lines(roc_data[[i]], col = i)
+}
+legend("bottomright", legend = paste(levels(val_data$Breach.Input), sprintf("(AUC = %.2f)", auc_values)), col = 1:length(roc_data), lwd = 2)
+```
+
+
+
 
 
 
@@ -3258,6 +3688,68 @@ if (nrow(train_data_sev_RQ4) > timesteps & nrow(test_data_sev_RQ4) > timesteps &
 ```
 
 
+Loss Curve
+
+```{r}
+# Plotting training and validation loss
+plot(history$metrics$val_loss, type = 'l', col = 'red', ylim = c(min(c(history$metrics$loss, history$metrics$val_loss)), max(c(history$metrics$loss, history$metrics$val_loss))), xlab = "Epochs", ylab = "Loss", main = "Training & Validation Loss per Epoch")
+lines(history$metrics$loss, col = 'blue')
+legend("topright", legend=c("Validation Loss", "Training Loss"), col=c("red", "blue"), lty=1)
+```
+
+Error Distribuition 
+
+```{r}
+residuals <- predictions - actual
+hist(residuals, breaks = 30, main = "Histogram of Prediction Errors", xlab = "Error", col = "gray")
+```
+
+
+
+Actual vs Predicted Plots
+
+```{r}
+# Assuming you have actual and predicted values
+plot(actual, type = 'l', col = 'blue', xlab = "Time", ylab = "Severity", main = "Actual vs Predicted Severity")
+lines(predictions, col = 'red')
+legend("topright", legend=c("Actual", "Predicted"), col=c("blue", "red"), lty=1)
+```
+
+
+```{r}
+library(ggplot2)
+
+# Assuming 'actual' and 'predictions' are your data vectors and they are part of a dataframe `data`
+data <- data.frame(
+  Time = 1:length(actual),
+  Actual = actual,
+  Predicted = predictions
+)
+
+# Basic Line Plot with Transparency and Smoothing
+ggplot(data, aes(x = Time)) +
+  geom_line(aes(y = Actual, color = "Actual"), alpha = 0.5) +
+  geom_line(aes(y = Predicted, color = "Predicted"), alpha = 0.5) +
+  labs(title = "Actual vs Predicted Severity",
+       x = "Time",
+       y = "Severity",
+       color = "Legend") +
+  theme_minimal()
+
+# Plot with Differences Highlighted
+data$Difference = abs(data$Actual - data$Predicted)
+
+ggplot(data, aes(x = Time)) +
+  geom_line(aes(y = Actual, color = "Actual"), alpha = 0.8) +
+  geom_line(aes(y = Predicted, color = "Predicted"), alpha = 0.8) +
+  geom_line(aes(y = Difference, color = "Difference"), alpha = 0.8, linetype = "dashed") +
+  labs(title = "Actual vs Predicted Severity with Differences",
+       x = "Time",
+       y = "Severity",
+       color = "Legend") +
+  theme_minimal()
+```
+
 
 Visualizations
 
@@ -3302,20 +3794,28 @@ ggplot(plot_data, aes(x = Year)) +
 2. Calculate and Plot Annual Averages
 
 ```{r}
-# Calculate the average severity for each year
+library(dplyr)
+library(ggplot2)
+
+# Assuming plot_data has been preprocessed appropriately
 average_severity <- plot_data %>%
   group_by(Year) %>%
-  summarize(Avg_Actual = mean(Actual), Avg_Predicted = mean(Predicted))
+  summarize(Avg_Actual = mean(Actual), Avg_Predicted = mean(Predicted), .groups = 'drop') %>%
+  mutate(Year = as.integer(round(Year)), Year = as.factor(Year))  # Ensure Year is an integer and then a factor
 
 # Plot the average severities over the years
 ggplot(average_severity, aes(x = Year)) +
-  geom_line(aes(y = Avg_Actual, color = "Avg Actual")) +
-  geom_line(aes(y = Avg_Predicted, color = "Avg Predicted")) +
-  labs(title = "Average Attack Severity Over Time",
-       x = "Year",
-       y = "Average Severity",
-       color = "Legend") +
-  theme_minimal()
+  geom_line(aes(y = Avg_Actual, color = "Avg Actual"), size = 1) +
+  geom_line(aes(y = Avg_Predicted, color = "Avg Predicted"), size = 1) +
+  labs(
+    title = "Average Attack Severity Over Time",
+    x = "Year",
+    y = "Average Severity",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  scale_x_discrete(name = "Year", breaks = levels(average_severity$Year)) +  # Ensure that breaks in x-axis align with the factor levels of Year
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))  # Rotate x-axis labels for better readability
 
 ```
 
@@ -3749,13 +4249,64 @@ Ordinal Logistic Regression (RQ6)	0.4052174
 
 
 
+Code with Confusion matrices coding
+
+```{r}
+# Load necessary libraries
+library(randomForest)
+library(xgboost)
+library(MASS)  # For Ordinal Logistic Regression
+library(caret)  # For confusion matrix
+
+# Existing code to prepare data...
+
+# Random Forest model
+rf_model_RQ6 <- randomForest(x = train_matrix, y = train_label)
+rf_pred_RQ6 <- predict(rf_model_RQ6, newdata = val_matrix)
+rf_pred_RQ6 <- factor(rf_pred_RQ6, levels = levels(as.factor(val_label)))  # Ensure factor levels match
+rf_conf_matrix <- confusionMatrix(as.factor(rf_pred_RQ6), as.factor(val_label))
+print("Random Forest Confusion Matrix:")
+print(rf_conf_matrix)
+rf_accuracy_RQ6 <- rf_conf_matrix$overall['Accuracy']
+print(paste("Random Forest Accuracy (RQ6):", rf_accuracy_RQ6))
+
+# XGBoost model
+num_class <- length(unique(train_label))
+xgb_model_RQ6 <- xgboost(data = train_matrix, label = train_label, nrounds = 100, objective = "multi:softmax", num_class = num_class)
+xgb_pred_RQ6 <- predict(xgb_model_RQ6, newdata = val_matrix)
+xgb_pred_RQ6 <- factor(xgb_pred_RQ6, levels = levels(as.factor(val_label)))  # Convert numeric predictions to factor
+xgb_conf_matrix <- confusionMatrix(as.factor(xgb_pred_RQ6), as.factor(val_label))
+print("XGBoost Confusion Matrix:")
+print(xgb_conf_matrix)
+xgb_accuracy_RQ6 <- xgb_conf_matrix$overall['Accuracy']
+print(paste("XGBoost Accuracy (RQ6):", xgb_accuracy_RQ6))
+
+# Ordinal Logistic Regression model
+olr_model_RQ6 <- polr(as.factor(Breach.Input.Num) ~ Max.Records.Impacted + State.Num, data = train_data2, Hess = TRUE)
+olr_pred_RQ6 <- predict(olr_model_RQ6, newdata = val_data2, type = "class")
+olr_conf_matrix <- confusionMatrix(as.factor(olr_pred_RQ6), as.factor(val_data2$Breach.Input.Num))
+print("Ordinal Logistic Regression Confusion Matrix:")
+print(olr_conf_matrix)
+olr_accuracy_RQ6 <- olr_conf_matrix$overall['Accuracy']
+print(paste("Ordinal Logistic Regression Accuracy (RQ6):", olr_accuracy_RQ6))
+
+# Compare accuracies and print confusion matrices
+accuracy_df_RQ6 <- data.frame(
+  Model = c("Random Forest (RQ6)", "XGBoost (RQ6)", "Ordinal Logistic Regression (RQ6)"),
+  Accuracy = c(rf_accuracy_RQ6, xgb_accuracy_RQ6, olr_accuracy_RQ6)
+)
+print("Model Accuracies:")
+print(accuracy_df_RQ6)
+```
 
 
 
+To Knit to PDF
 
 
-
-
+```{r}
+rmarkdown::render("/Users/annaarcher/Desktop/School/01- NCU-Anna/00- Dissertation/00- Dissertation 2.0/01- Data Breaches/01- Dataset/04- Work in Progress/DataAnalysis", output_format = "pdf_document", output_file = "DataAnalysisv2.pdf", output_dir = "/Users/annaarcher/Desktop/School/01- NCU-Anna/00- Dissertation/00- Dissertation 2.0/01- Data Breaches/01- Dataset/04- Work in Progress")
+```
 
 
 
