@@ -1952,17 +1952,6 @@ if (!is.null(ensemble_pred) && length(ensemble_pred) > 0) {
 ```
 
 
-Run Emsemble and evaluate
-
-```{r}
-# Evaluate the ensemble
-if (!is.null(ensemble_pred) && length(ensemble_pred) > 0) {
-  ensemble_val_cm <- confusionMatrix(ensemble_pred, val_dataRQ2$severity_category)
-  
-  # Print evaluation metrics for the ensemble
-  print(ensemble_val_cm)
-}
-```
 
 
 
@@ -2287,9 +2276,6 @@ cat("Accuracy:", ensemble_accuracy, "\n")
 cat("Precision:", ensemble_precision, "\n")
 cat("Recall:", ensemble_recall, "\n")
 cat("F1 Score:", ensemble_f1, "\n\n")
-
-
-
 ```
 [conflicted] Removing existing preference.
 [conflicted] Will prefer dplyr::select over any other package.
@@ -3751,6 +3737,39 @@ ggplot(data, aes(x = Time)) +
 ```
 
 
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+
+# Rename the column "Year.of.Breach" to "Actual Year"
+combined_data_sev <- bind_rows(train_data_sev_RQ4, test_data_sev_RQ4, val_data_sev_RQ4) %>%
+  rename(`Actual Year` = Year.of.Breach)
+
+# Aggregate data to get average attack size per year
+yearly_data_sev <- combined_data_sev %>%
+  group_by(`Actual Year`) %>%
+  summarise(Average_Attack_Size = mean(attack_size, na.rm = TRUE))
+
+# Create a time series plot
+ggplot(yearly_data_sev, aes(x = `Actual Year`, y = Average_Attack_Size)) +
+  geom_line(group = 1, color = "blue") +  # Line plot
+  geom_point(color = "red") +  # Add points to highlight each year
+  labs(title = "Average Attack Size Over Years",
+       x = "Actual Year",
+       y = "Average Attack Size") +
+  theme_minimal()  # Clean theme for better readability
+
+
+
+
+```
+
+
+Years are normalized to avoid grandient problems and speed up leaerning rate. 
+
+
 Visualizations
 
 ```{r}
@@ -4125,7 +4144,165 @@ $roc_auc
 Multi-class area under the curve: 0.6171
 
 
-results are in one note
+results are in one note and below
+
+Type 'citation("pROC")' for a citation.
+[1] "Distribution of Organization.Type in the original dataset:"
+
+ BSF  BSO  BSR  EDU  GOV  MED  NGO UNKN 
+4310 8668 3071 1579  958 5750  645  275 
+[1] "Distribution of Organization.Type in the training dataset:"
+
+ BSF  BSO  BSR  EDU  GOV  MED  NGO UNKN 
+3022 6059 2169 1111  678 4005  443  191 
+# weights:  840 (728 variable)
+initial  value 36760.367574 
+iter  10 value 36736.909583
+iter  20 value 31352.620250
+iter  30 value 28249.714949
+iter  40 value 26111.212247
+iter  50 value 25758.499691
+iter  50 value 25758.499691
+iter  60 value 24943.880187
+iter  70 value 24783.080467
+iter  80 value 24599.100817
+iter  90 value 24547.343980
+iter 100 value 24479.643916
+final  value 24479.643916 
+stopped after 100 iterations
+[conflicted] Will prefer pROC::auc over any other package.
+Warning: While computing multiclass `precision()`, some levels had no predicted events (i.e. `true_positive +
+false_positive = 0`).
+Precision is undefined in this case, and those levels will be removed from the averaged result.
+Note that the following number of true events actually occurred for each problematic event level:
+'NGO': 80, 'UNKN': 26
+Warning: While computing multiclass `precision()`, some levels had no predicted events (i.e. `true_positive +
+false_positive = 0`).
+Precision is undefined in this case, and those levels will be removed from the averaged result.
+Note that the following number of true events actually occurred for each problematic event level:
+'NGO': 80, 'UNKN': 26
+$accuracy
+[1] 0.3886688
+
+$precision
+[1] 0.3686575
+
+$recall
+[1] 0.1742544
+
+$f1
+[1] 0.1897169
+
+$roc_auc
+Multi-class area under the curve: 0.5925
+
+Warning: While computing multiclass `precision()`, some levels had no predicted events (i.e. `true_positive +
+false_positive = 0`).
+Precision is undefined in this case, and those levels will be removed from the averaged result.
+Note that the following number of true events actually occurred for each problematic event level:
+'NGO': 122, 'UNKN': 58
+Warning: While computing multiclass `precision()`, some levels had no predicted events (i.e. `true_positive +
+false_positive = 0`).
+Precision is undefined in this case, and those levels will be removed from the averaged result.
+Note that the following number of true events actually occurred for each problematic event level:
+'NGO': 122, 'UNKN': 58
+$accuracy
+[1] 0.306292
+
+$precision
+[1] 0.2464085
+
+$recall
+[1] 0.1729385
+
+$f1
+[1] 0.1974473
+
+$roc_auc
+Multi-class area under the curve: 0.6171
+
+
+visualizations
+ROC AUC
+The ROC curve will show the performance of each class against all other classes.
+
+
+```{r}
+library(pROC)
+
+# Function to plot ROC curves for each class with AUC in the legend
+plot_multiclass_roc <- function(probs, true_labels) {
+  # Convert true labels to factors if they aren't already
+  true_labels <- factor(true_labels)
+  
+  # Calculate ROC for each class and store AUC values
+  roc_list <- lapply(levels(true_labels), function(class) {
+    roc_curve = roc(response = true_labels == class, predictor = probs[, class])
+    list(roc = roc_curve, auc = auc(roc_curve))
+  })
+  
+  # Initial plot for the first class
+  plot(roc_list[[1]]$roc, main = "ROC Curves for Each Class", percent = TRUE, col = 1)
+  
+  # Add remaining ROC curves
+  for (i in 2:length(roc_list)) {
+    lines(roc_list[[i]]$roc, col = i)
+  }
+
+  # Create legend labels including AUC values
+  legend_labels <- sapply(1:length(roc_list), function(i) {
+    paste(levels(true_labels)[i], sprintf("(AUC = %.2f)", roc_list[[i]]$auc))
+  })
+  
+  legend("bottomright", legend = legend_labels, col = 1:length(levels(true_labels)), lwd = 2)
+}
+
+# Example usage with validation probabilities and true labels
+plot_multiclass_roc(val_probs, val_data$Organization.Type)
+
+
+```
+
+
+Confusion matrix heatmap --
+This visualization will help in assessing how well each class is predicted versus other classes, highlighting misclassifications.
+
+```{r}
+library(ggplot2)
+library(reshape2)
+
+# Function to plot confusion matrix as a heatmap
+plot_confusion_matrix <- function(predictions, true_labels) {
+  cm <- table(Predicted = predictions, Actual = true_labels)
+  cm_melted <- melt(cm)
+  
+  ggplot(cm_melted, aes(x = Actual, y = Predicted, fill = value)) +
+    geom_tile(color = "white") +
+    scale_fill_gradient(low = "blue", high = "red") +
+    labs(title = "Confusion Matrix Heatmap", x = "Actual Class", y = "Predicted Class") +
+    theme_minimal()
+}
+
+# Example usage
+plot_confusion_matrix(val_preds, val_data$Organization.Type)
+
+```
+
+Confusion matrix 
+
+```{r}
+# Load necessary library
+library(caret)
+
+# Generate confusion matrix for validation data
+val_conf_matrix <- confusionMatrix(as.factor(val_preds), as.factor(val_data$Organization.Type))
+
+# Print the confusion matrix
+print(val_conf_matrix)
+# For a simpler view, just show the table
+print(val_conf_matrix$table)
+
+```
 
 
 
@@ -4301,13 +4478,24 @@ print(accuracy_df_RQ6)
 
 
 
-To Knit to PDF
 
+
+Accuracy bar plot 
 
 ```{r}
-rmarkdown::render("/Users/annaarcher/Desktop/School/01- NCU-Anna/00- Dissertation/00- Dissertation 2.0/01- Data Breaches/01- Dataset/04- Work in Progress/DataAnalysis", output_format = "pdf_document", output_file = "DataAnalysisv2.pdf", output_dir = "/Users/annaarcher/Desktop/School/01- NCU-Anna/00- Dissertation/00- Dissertation 2.0/01- Data Breaches/01- Dataset/04- Work in Progress")
-```
+# Load necessary library for plotting
+library(ggplot2)
 
+# Create the bar plot for accuracy comparison
+ggplot(accuracy_df_RQ6, aes(x = Model, y = Accuracy)) +
+  geom_bar(stat = "identity", fill = "steelblue") +  # Bar plot with filled bars
+  geom_text(aes(label = round(Accuracy, 4)), vjust = -0.5) +  # Add accuracy values on top of the bars
+  labs(title = "Accuracy Comparison of Models", 
+       x = "Model", 
+       y = "Accuracy") +  # Label axes
+  theme_minimal()  # Use a clean theme for better presentation
+
+```
 
 
 
